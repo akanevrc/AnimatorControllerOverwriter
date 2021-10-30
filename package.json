@@ -1,0 +1,21 @@
+{
+  "name": "akanevrc.animator-controller-overwriter",
+  "version": "1.0.0",
+  "displayName": "AnimatorControllerOverwriter",
+  "description": "Extension for Unity Editor - regenerate and overwrite an AnimatorController with another AnimatorController to concatenate layers and parameters.",
+  "unity": "2019.4",
+  "unityRelease": "31f1",
+  "documentationUrl": "https://github.com/akanevrc/AnimatorControllerOverwriter/blob/main/README.md",
+  "changelogUrl": "https://github.com/akanevrc/AnimatorControllerOverwriter/blob/main/CHANGELOG.md",
+  "licensesUrl": "https://github.com/akanevrc/AnimatorControllerOverwriter/blob/main/LICENSE",
+  "dependencies": {},
+  "keywords": [
+    "AnimatorController",
+    "Editor"
+  ],
+  "author": {
+    "name": "akanevrc",
+    "email": "akanezoranomukou@gmail.com",
+    "url": "https://github.com/akanevrc"
+  }
+}
