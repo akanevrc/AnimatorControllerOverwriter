@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.1.1
+
+Bug Fix
+
+- Fix bug that 'Merge same parameters' checkbox not working
+
 ## 1.1.0
 
 New feature and bug fix

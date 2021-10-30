@@ -108,7 +108,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
 
             EditorGUILayout.Space();
 
-            GUILayout.Toggle(MergeSameParameters, "Merge same parameters");
+            MergeSameParameters = GUILayout.Toggle(MergeSameParameters, "Merge same parameters");
 
             EditorGUILayout.Space();
 
