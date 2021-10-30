@@ -20,6 +20,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             (
                 AnimatorController original,
                 AnimatorController overwrite,
+                SameNameLayerMode mode,
                 string prefixOfOriginalLayer,
                 string prefixOfOverwriteLayer,
                 bool mergeSameParameters
@@ -27,6 +28,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             {
                 Assert.That(original , Is.SameAs(UI.OriginalAnimatorController));
                 Assert.That(overwrite, Is.SameAs(UI.OverwriteAnimatorController));
+                Assert.That(mode, Is.EqualTo(UI.SameNameLayerMode));
                 Assert.That(prefixOfOriginalLayer , Is.EqualTo(UI.PrefixOfOriginalLayer));
                 Assert.That(prefixOfOverwriteLayer, Is.EqualTo(UI.PrefixOfOverwriteLayer));
                 Assert.That(mergeSameParameters   , Is.EqualTo(UI.MergeSameParameters));
@@ -37,6 +39,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
                 string path,
                 AnimatorController original,
                 AnimatorController overwrite,
+                SameNameLayerMode mode,
                 string prefixOfOriginalLayer,
                 string prefixOfOverwriteLayer,
                 bool mergeSameParameters
@@ -44,6 +47,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             {
                 Assert.That(original , Is.SameAs(UI.OriginalAnimatorController));
                 Assert.That(overwrite, Is.SameAs(UI.OverwriteAnimatorController));
+                Assert.That(mode, Is.EqualTo(UI.SameNameLayerMode));
                 Assert.That(prefixOfOriginalLayer , Is.EqualTo(UI.PrefixOfOriginalLayer));
                 Assert.That(prefixOfOverwriteLayer, Is.EqualTo(UI.PrefixOfOverwriteLayer));
                 Assert.That(mergeSameParameters   , Is.EqualTo(UI.MergeSameParameters));
@@ -61,6 +65,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             UI.Overwriter                  = new MockOverwriter(UI);
             UI.OriginalAnimatorController  = AnimatorController.CreateAnimatorControllerAtPath($"Assets/{GUID.Generate()}.controller");
             UI.OverwriteAnimatorController = AnimatorController.CreateAnimatorControllerAtPath($"Assets/{GUID.Generate()}.controller");
+            UI.SameNameLayerMode           = SameNameLayerMode.Replace;
             UI.PrefixOfOriginalLayer       = "[Original]";
             UI.PrefixOfOverwriteLayer      = "[Overwrite]";
             UI.MergeSameParameters         = true;

@@ -7,6 +7,16 @@ using UnityEngine;
 
 namespace akanevrc.AnimatorControllerOverwriter.Editor
 {
+    public class SyncedLayerOverwritedException : Exception
+    {
+        public string Name { get; }
+
+        public SyncedLayerOverwritedException(string name)
+        {
+            Name = name;
+        }
+    }
+
     public class LayerConflictException : Exception
     {
         public string Name { get; }
@@ -27,12 +37,20 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
         }
     }
 
+    public enum SameNameLayerMode
+    {
+        RaiseError,
+        DoNotCopy,
+        Replace
+    }
+
     public interface IOverwriter
     {
         void Validate
         (
             AnimatorController original,
             AnimatorController overwrite,
+            SameNameLayerMode mode,
             string prefixOriginalLayer,
             string prefixOverwriteLayer,
             bool mergeSameParameters
@@ -43,6 +61,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
             string path,
             AnimatorController original,
             AnimatorController overwrite,
+            SameNameLayerMode mode,
             string prefixOriginalLayer,
             string prefixOverwriteLayer,
             bool mergeSameParameters
@@ -69,6 +88,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
         (
             AnimatorController original,
             AnimatorController overwrite,
+            SameNameLayerMode mode,
             string prefixOfOriginalLayer,
             string prefixOfOverwriteLayer,
             bool mergeSameParameters
@@ -83,6 +103,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
                     result,
                     original,
                     overwrite,
+                    mode,
                     prefixOfOriginalLayer,
                     prefixOfOverwriteLayer,
                     mergeSameParameters
@@ -99,6 +120,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
             string path,
             AnimatorController original,
             AnimatorController overwrite,
+            SameNameLayerMode mode,
             string prefixOfOriginalLayer,
             string prefixOfOverwriteLayer,
             bool mergeSameParameters
@@ -113,6 +135,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
                     result,
                     original,
                     overwrite,
+                    mode,
                     prefixOfOriginalLayer,
                     prefixOfOverwriteLayer,
                     mergeSameParameters
@@ -132,6 +155,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
             AnimatorController result,
             AnimatorController original,
             AnimatorController overwrite,
+            SameNameLayerMode mode,
             string prefixOfOriginalLayer,
             string prefixOfOverwriteLayer,
             bool mergeSameParameters
@@ -148,6 +172,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
                 (
                     original .layers,
                     overwrite.layers,
+                    mode,
                     prefixOfOriginalLayer,
                     prefixOfOverwriteLayer
                 );
@@ -179,20 +204,82 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
         (
             AnimatorControllerLayer[] originals,
             AnimatorControllerLayer[] overwrites,
+            SameNameLayerMode mode,
             string prefixOfOriginalLayer,
             string prefixOfOverwriteLayer
         )
         {
-            foreach (var orig in originals)
+            switch (mode)
             {
-                foreach (var over in overwrites)
+                case SameNameLayerMode.RaiseError:
                 {
-                    if (orig.name == over.name) throw new LayerConflictException(orig.name);
+                    var newOriginals  = originals .Select(DuplicateLayer(prefixOfOriginalLayer , 0                  )).ToArray();
+                    var newOverwrites = overwrites.Select(DuplicateLayer(prefixOfOverwriteLayer, newOriginals.Length)).ToArray();
+                    foreach (var orig in newOriginals)
+                    {
+                        foreach (var over in newOverwrites)
+                        {
+                            if (orig.name == over.name) throw new LayerConflictException(orig.name);
+                        }
+                    }
+                    return newOriginals.Concat(newOverwrites).ToArray();
                 }
+                case SameNameLayerMode.DoNotCopy:
+                {
+                    var newOriginals  = originals .Select(DuplicateLayer(prefixOfOriginalLayer , 0)).ToArray();
+                    var newOverwrites = overwrites.Select(DuplicateLayer(prefixOfOverwriteLayer, 0)).ToArray();
+                    var nameToOrig    = newOriginals.ToDictionary(elem => elem.name, elem => elem);
+                    var isDeleteds    = newOverwrites.Select(elem => nameToOrig.ContainsKey(elem.name)).ToArray();
+                    for (var i = 0; i < newOverwrites.Length; i++)
+                    {
+                        if (isDeleteds[i] && overwrites.Any(elem => elem.syncedLayerIndex == i))
+                            throw new SyncedLayerOverwritedException(newOverwrites[i].name);
+                    }
+                    var indices = new int[newOverwrites.Length];
+                    for (var (i, baseIndex) = (0, newOriginals.Length); i < indices.Length; i++, baseIndex++)
+                    {
+                        indices[i] = baseIndex;
+                        baseIndex -= isDeleteds[i] ? 1 : 0;
+                    }
+                    for (var i = 0; i < newOverwrites.Length; i++)
+                    {
+                        if (isDeleteds[i] || newOverwrites[i].syncedLayerIndex == -1) continue;
+                        newOverwrites[i].syncedLayerIndex = indices[overwrites[i].syncedLayerIndex];
+                    }
+                    return newOriginals.Concat(newOverwrites.Where((_, i) => !isDeleteds[i])).ToArray();
+                }
+                case SameNameLayerMode.Replace:
+                {
+                    var newOriginals  = originals .Select(DuplicateLayer(prefixOfOriginalLayer , 0)).ToArray();
+                    var newOverwrites = overwrites.Select(DuplicateLayer(prefixOfOverwriteLayer, 0)).ToArray();
+                    var nameToOrig    = newOriginals .Select((elem, i) => (elem, i)).ToDictionary(ei => ei.elem.name, ei => ei);
+                    var nameToOver    = newOverwrites.Select((elem, i) => (elem, i)).ToDictionary(ei => ei.elem.name, ei => ei);
+                    var isDeleteds    = newOriginals .Select(elem => nameToOver.ContainsKey(elem.name)).ToArray();
+                    var isReplacings  = newOverwrites.Select(elem => nameToOrig.ContainsKey(elem.name)).ToArray();
+                    for (var i = 0; i < newOriginals.Length; i++)
+                    {
+                        if (isDeleteds[i] && originals.Any(elem => elem.syncedLayerIndex == i))
+                            throw new SyncedLayerOverwritedException(newOriginals[i].name);
+                    }
+                    var indices = new int[newOverwrites.Length];
+                    for (var (i, baseIndex) = (0, newOriginals.Length); i < indices.Length; i++, baseIndex++)
+                    {
+                        indices[i] = isReplacings[i] ? nameToOrig[newOverwrites[i].name].i : baseIndex;
+                        baseIndex -= isReplacings[i] ? 1 : 0;
+                    }
+                    for (var i = 0; i < newOverwrites.Length; i++)
+                    {
+                        if (newOverwrites[i].syncedLayerIndex == -1) continue;
+                        newOverwrites[i].syncedLayerIndex = indices[overwrites[i].syncedLayerIndex];
+                    }
+                    return newOriginals
+                        .Select((elem, i) => isDeleteds[i] ? newOverwrites[nameToOver[elem.name].i] : elem)
+                        .Concat(newOverwrites.Where((_, i) => !isReplacings[i]))
+                        .ToArray();
+                }
+                default:
+                    throw new ArgumentException(nameof(mode));
             }
-            var newOriginals  = originals .Select(DuplicateLayer(prefixOfOriginalLayer , 0                  )).ToArray();
-            var newOverwrites = overwrites.Select(DuplicateLayer(prefixOfOverwriteLayer, newOriginals.Length)).ToArray();
-            return newOriginals.Concat(newOverwrites).ToArray();
         }
 
         private AnimatorControllerParameter DuplicateParameter(AnimatorControllerParameter src)

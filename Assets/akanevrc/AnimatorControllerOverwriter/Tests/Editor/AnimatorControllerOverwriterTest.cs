@@ -480,7 +480,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
         {
             Assert.That
             (
-                () => Overwriter.Validate(Original, Overwrite, "", "", false),
+                () => Overwriter.Validate(Original, Overwrite, SameNameLayerMode.RaiseError, "", "", false),
                 Throws.Nothing
             );
         }
@@ -499,7 +499,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             
             Assert.That
             (
-                () => Overwriter.Validate(Original, Overwrite, "", "", false),
+                () => Overwriter.Validate(Original, Overwrite, SameNameLayerMode.RaiseError, "", "", false),
                 Throws.TypeOf<LayerConflictException>()
             );
         }
@@ -511,10 +511,10 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
 
             try
             {
-                var result = Overwriter.Generate(path, Original, Overwrite, "[Original]", "[Overwrite]", false);
+                var result = Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.RaiseError, "[Original]", "[Overwrite]", false);
 
                 Assert.That(AssetDatabase.GetAssetPath(result), Is.EqualTo(path));
-                new AssertDuplicationFunc(this, "[Original]", "[Overwrite]", false).Invoke(result);
+                new AssertDuplicationFunc(this, SameNameLayerMode.RaiseError, "[Original]", "[Overwrite]", false).Invoke(result);
             }
             finally
             {
@@ -541,10 +541,10 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
 
             try
             {
-                var result = Overwriter.Generate(path, Original, Overwrite, "[Original]", "[Overwrite]", true);
+                var result = Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.RaiseError, "[Original]", "[Overwrite]", true);
 
                 Assert.That(AssetDatabase.GetAssetPath(result), Is.EqualTo(path));
-                new AssertDuplicationFunc(this, "[Original]", "[Overwrite]", false).Invoke(result);
+                new AssertDuplicationFunc(this, SameNameLayerMode.RaiseError, "[Original]", "[Overwrite]", false).Invoke(result);
             }
             finally
             {
@@ -570,7 +570,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             {
                 Assert.That
                 (
-                    () => Overwriter.Generate(path, Original, Overwrite, "[Original]", "[Overwrite]", false),
+                    () => Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.RaiseError, "", "", false),
                     Throws.TypeOf<LayerConflictException>()
                 );
             }
@@ -601,7 +601,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             {
                 Assert.That
                 (
-                    () => Overwriter.Generate(path, Original, Overwrite, "[Original]", "[Overwrite]", false),
+                    () => Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.RaiseError, "[Original]", "[Overwrite]", false),
                     Throws.TypeOf<ParameterConflictException>()
                 );
             }
@@ -632,8 +632,262 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             {
                 Assert.That
                 (
-                    () => Overwriter.Generate(path, Original, Overwrite, "[Original]", "[Overwrite]", true),
+                    () => Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.RaiseError, "[Original]", "[Overwrite]", true),
                     Throws.TypeOf<ParameterConflictException>()
+                );
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(path);
+            }
+        }
+
+        [Test]
+        public void GenerateToBeSuccessWhenSameNameLayerModeIsDoNotCopy()
+        {
+            var layer1 = GenerateLayer();
+            var layer2 = GenerateLayer();
+
+            layer1.name = "Same Name";
+            layer2.name = "Same Name";
+
+            Original .AddLayer(layer1);
+            Overwrite.AddLayer(layer2);
+
+            var path = $"Assets/{GUID.Generate()}.controller";
+
+            try
+            {
+                var result = Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.DoNotCopy, "", "", false);
+
+                Assert.That(AssetDatabase.GetAssetPath(result), Is.EqualTo(path));
+                new AssertDuplicationFunc(this, SameNameLayerMode.DoNotCopy, "", "", false).Invoke(result);
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(path);
+            }
+        }
+
+        [Test]
+        public void GenerateToBeSuccessWhenSameNameLayerModeIsReplace()
+        {
+            var layer1 = GenerateLayer();
+            var layer2 = GenerateLayer();
+
+            layer1.name = "Same Name";
+            layer2.name = "Same Name";
+
+            Original .AddLayer(layer1);
+            Overwrite.AddLayer(layer2);
+
+            var path = $"Assets/{GUID.Generate()}.controller";
+
+            try
+            {
+                var result = Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.Replace, "", "", false);
+
+                Assert.That(AssetDatabase.GetAssetPath(result), Is.EqualTo(path));
+                new AssertDuplicationFunc(this, SameNameLayerMode.Replace, "", "", false).Invoke(result);
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(path);
+            }
+        }
+
+        [Test]
+        public void GenerateToBeSettingValidSyncedLayerIndexWhenSameNameLayerModeIsRaiseError()
+        {
+            var syncLayer1 = Original.layers[Original .layers.Length - 1];
+            syncLayer1.syncedLayerIndex = 0;
+            var syncLayer2 = Overwrite.layers[Overwrite.layers.Length - 1];
+            syncLayer2.syncedLayerIndex = 0;
+
+            Original.layers = Original.layers
+                .Take(Original.layers.Length - 1)
+                .Concat(new AnimatorControllerLayer[] { syncLayer1 })
+                .ToArray();
+            Overwrite.layers = Overwrite.layers
+                .Take(Overwrite.layers.Length - 1)
+                .Concat(new AnimatorControllerLayer[] { syncLayer2 })
+                .ToArray();
+
+            var path = $"Assets/{GUID.Generate()}.controller";
+
+            try
+            {
+                var result = Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.DoNotCopy, "", "", false);
+
+                Assert.That(AssetDatabase.GetAssetPath(result), Is.EqualTo(path));
+                Assert.That(result.layers[Original.layers.Length - 1].syncedLayerIndex, Is.EqualTo(0));
+                Assert.That(result.layers[result  .layers.Length - 1].syncedLayerIndex, Is.EqualTo(Original.layers.Length));
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(path);
+            }
+        }
+
+        [Test]
+        public void GenerateToBeSettingValidSyncedLayerIndexWhenSameNameLayerModeIsDoNotCopy()
+        {
+            var layer1 = GenerateLayer();
+            var layer2 = GenerateLayer();
+
+            layer1.name = "Same Name";
+            layer2.name = "Same Name";
+
+            var syncLayer = Overwrite.layers[Overwrite.layers.Length - 1];
+            syncLayer.syncedLayerIndex = 1;
+
+            Original .layers = new AnimatorControllerLayer[] { layer1 }.Concat(Original.layers).ToArray();
+            Overwrite.layers = new AnimatorControllerLayer[] { layer2 }
+                .Concat(Overwrite.layers.Take(Overwrite.layers.Length - 1))
+                .Concat(new AnimatorControllerLayer[] { syncLayer })
+                .ToArray();
+
+            var path = $"Assets/{GUID.Generate()}.controller";
+
+            try
+            {
+                var result = Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.DoNotCopy, "", "", false);
+
+                Assert.That(AssetDatabase.GetAssetPath(result), Is.EqualTo(path));
+                Assert.That(result.layers[result.layers.Length - 1].syncedLayerIndex, Is.EqualTo(Original.layers.Length));
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(path);
+            }
+        }
+
+        [Test]
+        public void GenerateToBeFailureWhenSameNameLayerModeIsDoNotCopyAndSyncedLayerOverwrited()
+        {
+            var layer1 = GenerateLayer();
+            var layer2 = GenerateLayer();
+
+            layer1.name = "Same Name";
+            layer2.name = "Same Name";
+
+            var syncLayer = Overwrite.layers[Overwrite.layers.Length - 1];
+            syncLayer.syncedLayerIndex = 0;
+
+            Original .layers = new AnimatorControllerLayer[] { layer1 }.Concat(Original.layers).ToArray();
+            Overwrite.layers = new AnimatorControllerLayer[] { layer2 }
+                .Concat(Overwrite.layers.Take(Overwrite.layers.Length - 1))
+                .Concat(new AnimatorControllerLayer[] { syncLayer })
+                .ToArray();
+
+            var path = $"Assets/{GUID.Generate()}.controller";
+
+            try
+            {
+                Assert.That
+                (
+                    () => Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.DoNotCopy, "", "", false),
+                    Throws.TypeOf<SyncedLayerOverwritedException>()
+                );
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(path);
+            }
+        }
+
+        [Test]
+        public void GenerateToBeSettingValidSyncedLayerIndexWhenSameNameLayerModeIsReplaceAndLayerConflicts()
+        {
+            var layer1 = GenerateLayer();
+            var layer2 = GenerateLayer();
+
+            layer1.name = "Same Name";
+            layer2.name = "Same Name";
+
+            var syncLayer = Overwrite.layers[Overwrite.layers.Length - 1];
+            syncLayer.syncedLayerIndex = 0;
+
+            Original .layers = new AnimatorControllerLayer[] { layer1 }.Concat(Original.layers).ToArray();
+            Overwrite.layers = new AnimatorControllerLayer[] { layer2 }
+                .Concat(Overwrite.layers.Take(Overwrite.layers.Length - 1))
+                .Concat(new AnimatorControllerLayer[] { syncLayer })
+                .ToArray();
+
+            var path = $"Assets/{GUID.Generate()}.controller";
+
+            try
+            {
+                var result = Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.Replace, "", "", false);
+
+                Assert.That(AssetDatabase.GetAssetPath(result), Is.EqualTo(path));
+                Assert.That(result.layers[result.layers.Length - 1].syncedLayerIndex, Is.EqualTo(0));
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(path);
+            }
+        }
+
+        [Test]
+        public void GenerateToBeSettingValidSyncedLayerIndexWhenSameNameLayerModeIsReplaceAndLayerNotConflict()
+        {
+            var layer1 = GenerateLayer();
+            var layer2 = GenerateLayer();
+
+            layer1.name = "Same Name";
+            layer2.name = "Same Name";
+
+            var syncLayer = Overwrite.layers[Overwrite.layers.Length - 1];
+            syncLayer.syncedLayerIndex = 1;
+
+            Original .layers = new AnimatorControllerLayer[] { layer1 }.Concat(Original.layers).ToArray();
+            Overwrite.layers = new AnimatorControllerLayer[] { layer2 }
+                .Concat(Overwrite.layers.Take(Overwrite.layers.Length - 1))
+                .Concat(new AnimatorControllerLayer[] { syncLayer })
+                .ToArray();
+
+            var path = $"Assets/{GUID.Generate()}.controller";
+
+            try
+            {
+                var result = Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.Replace, "", "", false);
+
+                Assert.That(AssetDatabase.GetAssetPath(result), Is.EqualTo(path));
+                Assert.That(result.layers[result.layers.Length - 1].syncedLayerIndex, Is.EqualTo(Original.layers.Length));
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(path);
+            }
+        }
+
+        [Test]
+        public void GenerateToBeFailureWhenSameNameLayerModeIsReplaceAndSyncedLayerOverwrited()
+        {
+            var layer1 = GenerateLayer();
+            var layer2 = GenerateLayer();
+
+            layer1.name = "Same Name";
+            layer2.name = "Same Name";
+
+            var syncLayer = Original.layers[Original.layers.Length - 1];
+            syncLayer.syncedLayerIndex = 0;
+
+            Original.layers = new AnimatorControllerLayer[] { layer1 }
+                .Concat(Original.layers.Take(Original.layers.Length - 1))
+                .Concat(new AnimatorControllerLayer[] { syncLayer })
+                .ToArray();
+            Overwrite.layers = new AnimatorControllerLayer[] { layer2 }.Concat(Overwrite.layers).ToArray();
+
+            var path = $"Assets/{GUID.Generate()}.controller";
+
+            try
+            {
+                Assert.That
+                (
+                    () => Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.Replace, "", "", false),
+                    Throws.TypeOf<SyncedLayerOverwritedException>()
                 );
             }
             finally
@@ -645,19 +899,23 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
         private class AssertDuplicationFunc
         {
             private AnimatorControllerOverwriterTest Parent { get; }
+            private SameNameLayerMode Mode { get; }
             private string PrefixOfOriginalLayer { get; }
             private string PrefixOfOverwriteLayer { get; }
             private bool MergeSameParameters { get; }
+            private bool[] IsOriginalLayerIndices { get; set; }
 
             public AssertDuplicationFunc
             (
                 AnimatorControllerOverwriterTest parent,
+                SameNameLayerMode mode,
                 string prefixOfOriginalLayer,
                 string prefixOfOverwriteLayer,
                 bool mergeSameParameters
             )
             {
                 Parent                 = parent;
+                Mode                   = mode;
                 PrefixOfOriginalLayer  = prefixOfOriginalLayer;
                 PrefixOfOverwriteLayer = prefixOfOverwriteLayer;
                 MergeSameParameters    = mergeSameParameters;
@@ -668,14 +926,10 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
                 Assert.That(result.name     , Is.EqualTo($"{Parent.Original.name}_overwrited"));
                 Assert.That(result.hideFlags, Is.EqualTo(HideFlags.None));
 
-                var concatLayers = Parent.Original.layers.Concat(Parent.Overwrite.layers).ToArray();
+                var concatLayers = ConcatLayers(Parent.Original.layers, Parent.Overwrite.layers);
                 Assert.That(result.layers.Length, Is.EqualTo(concatLayers.Length));
 
-                var concatParameters =
-                    Parent.Original.parameters.Concat
-                    (
-                        Parent.Overwrite.parameters.Where(elem => Parent.Original.parameters.All(el => el.name != elem.name))
-                    ).ToArray();
+                var concatParameters = ConcatParameters(Parent.Original.parameters, Parent.Overwrite.parameters);
                 Assert.That(result.parameters.Length, Is.EqualTo(concatParameters.Length));
 
                 for (var i = 0; i < result.layers.Length; i++)
@@ -687,6 +941,47 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
                 {
                     AssertValue(typeof(AnimatorControllerParameter[]), -1, i, "", result.parameters[i], concatParameters[i]);
                 }
+            }
+
+            private AnimatorControllerLayer[] ConcatLayers(AnimatorControllerLayer[] originals, AnimatorControllerLayer[] overwrites)
+            {
+                switch (Mode)
+                {
+                    case SameNameLayerMode.RaiseError:
+                    {
+                        IsOriginalLayerIndices = originals.Select(_ => true).Concat(overwrites.Select(_ => false)).ToArray();
+                        return originals.Concat(overwrites).ToArray();
+                    }
+                    case SameNameLayerMode.DoNotCopy:
+                    {
+                        var nameToOrig = originals.ToDictionary(elem => PrefixOfOriginalLayer + elem.name, elem => elem);
+                        var appendings = overwrites.Where(elem => !nameToOrig.ContainsKey(PrefixOfOverwriteLayer + elem.name));
+                        IsOriginalLayerIndices = originals.Select(_ => true).Concat(appendings.Select(_ => false)).ToArray();
+                        return originals.Concat(appendings).ToArray();
+                    }
+                    case SameNameLayerMode.Replace:
+                    {
+                        var nameToOrig = originals .ToDictionary(elem => PrefixOfOriginalLayer  + elem.name, elem => elem);
+                        var nameToOver = overwrites.ToDictionary(elem => PrefixOfOverwriteLayer + elem.name, elem => elem);
+                        var appendings = overwrites.Where(elem => !nameToOrig.ContainsKey(PrefixOfOverwriteLayer + elem.name));
+                        var inits      = originals.Select
+                        (
+                            elem => nameToOver.ContainsKey(PrefixOfOriginalLayer + elem.name) ? nameToOver[PrefixOfOriginalLayer + elem.name] : elem
+                        );
+                        IsOriginalLayerIndices = originals
+                            .Select(elem => !nameToOver.ContainsKey(PrefixOfOriginalLayer + elem.name))
+                            .Concat(appendings.Select(_ => false))
+                            .ToArray();
+                        return inits.Concat(appendings).ToArray();
+                    }
+                    default:
+                        throw new InvalidOperationException();
+                }
+            }
+
+            private AnimatorControllerParameter[] ConcatParameters(AnimatorControllerParameter[] originals, AnimatorControllerParameter[] overwrites)
+            {
+                return originals.Concat(overwrites.Where(elem => originals.All(el => el.name != elem.name))).ToArray();
             }
 
             private void AssertProperties(int index, object result, object original)
@@ -722,7 +1017,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
 
                 if (typeof(AnimatorControllerLayer).IsAssignableFrom(parentType) && propertyName == "name")
                 {
-                    if (parentIndex < Parent.Original.layers.Length)
+                    if (IsOriginalLayerIndices[parentIndex])
                     {
                         Assert.That(result, Is.EqualTo(PrefixOfOriginalLayer + original));
                     }

@@ -12,6 +12,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
 
         public AnimatorController OriginalAnimatorController { get; set; } = null;
         public AnimatorController OverwriteAnimatorController { get; set; } = null;
+        public SameNameLayerMode SameNameLayerMode { get; set; } = SameNameLayerMode.RaiseError;
         public string PrefixOfOriginalLayer { get; set; } = "";
         public string PrefixOfOverwriteLayer { get; set; } = "";
         public bool MergeSameParameters { get; set; } = false;
@@ -72,7 +73,24 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
 
             EditorGUILayout.Space();
 
-            GUILayout.Label("Name Prefixes");
+            SameNameLayerMode = (SameNameLayerMode)EditorGUILayout.EnumPopup("Same Name Layer", SameNameLayerMode);
+
+            GUILayout.Box
+            (
+                new GUIContent
+                (
+                    "This selection will be applied if same name layers exist between base and overwriting.\n" +
+                    "Raise Error : Error will occur when layer names conflict.\n" +
+                    "Do Not Copy : Overwriting layer will not be copied into generated assets.\n" +
+                    "Replace : Overwriting layer will be copied into generated assets, and conflicted base layer will not be copied.",
+                    InfoIcon
+                ),
+                new GUIStyle(EditorStyles.helpBox)
+            );
+
+            EditorGUILayout.Space();
+
+            GUILayout.Label("Name prefixes");
             PrefixOfOriginalLayer  = EditorGUILayout.TextField("Base layer"       , PrefixOfOriginalLayer);
             PrefixOfOverwriteLayer = EditorGUILayout.TextField("Overwriting layer", PrefixOfOverwriteLayer);
 
@@ -80,7 +98,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
             (
                 new GUIContent
                 (
-                    "Name Prefix is added to head of object names.\n" +
+                    "Name prefix will be added to head of object names.\n" +
                     "For example, base layer prefix is '[Base]', and name of layer in base asset is 'Layer1', " +
                     "then name of corresponding layers are '[Base]Layer1' in generated asset.",
                     InfoIcon
@@ -96,7 +114,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
 
             EditorGUI.BeginDisabledGroup(!ButtonsEnabled);
 
-            if (GUILayout.Button("Check Validation"))
+            if (GUILayout.Button("Check validation"))
             {
                 try
                 {
@@ -193,6 +211,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
             (
                 OriginalAnimatorController,
                 OverwriteAnimatorController,
+                SameNameLayerMode,
                 PrefixOfOriginalLayer,
                 PrefixOfOverwriteLayer,
                 MergeSameParameters
@@ -211,6 +230,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
                 path,
                 OriginalAnimatorController,
                 OverwriteAnimatorController,
+                SameNameLayerMode,
                 PrefixOfOriginalLayer,
                 PrefixOfOverwriteLayer,
                 MergeSameParameters
