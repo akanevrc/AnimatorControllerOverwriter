@@ -150,7 +150,19 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
 
             EditorGUILayout.Space();
 
-            if (Error is LayerConflictException lcex)
+            if (Error is SyncedLayerOverwritedException soex)
+            {
+                GUILayout.Box
+                (
+                    new GUIContent
+                    (
+                        $"Layer '{soex.Name}' cannot be refered as synced layer because the layer will not be copied into output asset.",
+                        ErrorIcon
+                    ),
+                    new GUIStyle(EditorStyles.helpBox)
+                );
+            }
+            else if (Error is LayerConflictException lcex)
             {
                 GUILayout.Box
                 (
