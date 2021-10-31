@@ -131,7 +131,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
                 var path = EditorUtility.SaveFilePanelInProject
                 (
                     "Save AnimatorController",
-                    $"{OriginalAnimatorController.name}_overwrited.controller",
+                    $"{OriginalAnimatorController.name}_overwritten.controller",
                     "controller",
                     "Enter a name of new AnimatorController."
                 );
@@ -150,7 +150,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
 
             EditorGUILayout.Space();
 
-            if (Error is SyncedLayerOverwritedException soex)
+            if (Error is SyncedLayerOverwrittenException soex)
             {
                 GUILayout.Box
                 (

@@ -763,7 +763,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
         }
 
         [Test]
-        public void GenerateToBeFailureWhenSameNameLayerModeIsDoNotCopyAndSyncedLayerOverwrited()
+        public void GenerateToBeFailureWhenSameNameLayerModeIsDoNotCopyAndSyncedLayerOverwritten()
         {
             var layer1 = GenerateLayer();
             var layer2 = GenerateLayer();
@@ -787,7 +787,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
                 Assert.That
                 (
                     () => Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.DoNotCopy, "", "", false),
-                    Throws.TypeOf<SyncedLayerOverwritedException>()
+                    Throws.TypeOf<SyncedLayerOverwrittenException>()
                 );
             }
             finally
@@ -863,7 +863,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
         }
 
         [Test]
-        public void GenerateToBeFailureWhenSameNameLayerModeIsReplaceAndSyncedLayerOverwrited()
+        public void GenerateToBeFailureWhenSameNameLayerModeIsReplaceAndSyncedLayerOverwritten()
         {
             var layer1 = GenerateLayer();
             var layer2 = GenerateLayer();
@@ -887,7 +887,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
                 Assert.That
                 (
                     () => Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.Replace, "", "", false),
-                    Throws.TypeOf<SyncedLayerOverwritedException>()
+                    Throws.TypeOf<SyncedLayerOverwrittenException>()
                 );
             }
             finally
@@ -923,7 +923,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
 
             public void Invoke(AnimatorController result)
             {
-                Assert.That(result.name     , Is.EqualTo($"{Parent.Original.name}_overwrited"));
+                Assert.That(result.name     , Is.EqualTo($"{Parent.Original.name}_overwritten"));
                 Assert.That(result.hideFlags, Is.EqualTo(HideFlags.None));
 
                 var concatLayers = ConcatLayers(Parent.Original.layers, Parent.Overwrite.layers);

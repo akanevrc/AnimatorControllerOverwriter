@@ -7,11 +7,11 @@ using UnityEngine;
 
 namespace akanevrc.AnimatorControllerOverwriter.Editor
 {
-    public class SyncedLayerOverwritedException : Exception
+    public class SyncedLayerOverwrittenException : Exception
     {
         public string Name { get; }
 
-        public SyncedLayerOverwritedException(string name)
+        public SyncedLayerOverwrittenException(string name)
         {
             Name = name;
         }
@@ -161,7 +161,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
             bool mergeSameParameters
         )
         {
-            result.name   = $"{original.name}_overwrited";
+            result.name   = $"{original.name}_overwritten";
             result.parameters = OverwriteParameters
                 (
                     original .parameters,
@@ -233,7 +233,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
                     for (var i = 0; i < newOverwrites.Length; i++)
                     {
                         if (isDeleteds[i] && overwrites.Any(elem => elem.syncedLayerIndex == i))
-                            throw new SyncedLayerOverwritedException(newOverwrites[i].name);
+                            throw new SyncedLayerOverwrittenException(newOverwrites[i].name);
                     }
                     var indices = new int[newOverwrites.Length];
                     for (var (i, baseIndex) = (0, newOriginals.Length); i < indices.Length; i++, baseIndex++)
@@ -259,7 +259,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
                     for (var i = 0; i < newOriginals.Length; i++)
                     {
                         if (isDeleteds[i] && originals.Any(elem => elem.syncedLayerIndex == i))
-                            throw new SyncedLayerOverwritedException(newOriginals[i].name);
+                            throw new SyncedLayerOverwrittenException(newOriginals[i].name);
                     }
                     var indices = new int[newOverwrites.Length];
                     for (var (i, baseIndex) = (0, newOriginals.Length); i < indices.Length; i++, baseIndex++)
