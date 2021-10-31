@@ -1,5 +1,12 @@
 # Change Log
 
+## 1.1.2
+
+Bug Fix
+
+- Fix bug that 'SyncedLayerOverwrittenException' cannot be shown in UI
+- Fix misspell 'overwrited'
+
 ## 1.1.1
 
 Bug Fix
