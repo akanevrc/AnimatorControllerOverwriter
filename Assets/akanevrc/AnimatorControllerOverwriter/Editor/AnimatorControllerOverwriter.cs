@@ -9,7 +9,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
 {
     public class SyncedLayerOverwrittenException : Exception
     {
-        public string Name { get; }
+        public readonly string Name;
 
         public SyncedLayerOverwrittenException(string name)
         {
@@ -19,7 +19,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
 
     public class LayerConflictException : Exception
     {
-        public string Name { get; }
+        public readonly string Name;
 
         public LayerConflictException(string name)
         {
@@ -29,7 +29,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
 
     public class ParameterConflictException : Exception
     {
-        public string Name { get; }
+        public readonly string Name;
 
         public ParameterConflictException(string name)
         {
@@ -320,10 +320,10 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
 
         private class DuplicateStateMachineFunc
         {
-            private AnimatorControllerOverwriter Parent { get; }
-            private HashSet<AnimatorStateMachine> Exists { get; }
-            private Dictionary<AnimatorState, AnimatorState> OldToNewState { get; }
-            private Dictionary<AnimatorStateMachine, AnimatorStateMachine> OldToNewStateMachine { get; }
+            private readonly AnimatorControllerOverwriter Parent;
+            private readonly HashSet<AnimatorStateMachine> Exists;
+            private readonly Dictionary<AnimatorState, AnimatorState> OldToNewState;
+            private readonly Dictionary<AnimatorStateMachine, AnimatorStateMachine> OldToNewStateMachine;
 
             public DuplicateStateMachineFunc(AnimatorControllerOverwriter parent)
             {
@@ -494,8 +494,8 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
         
         private class DuplicateMotionFunc
         {
-            private AnimatorControllerOverwriter Parent { get; }
-            private HashSet<Motion> Exists { get; }
+            private readonly AnimatorControllerOverwriter Parent;
+            private readonly HashSet<Motion> Exists;
 
             public DuplicateMotionFunc(AnimatorControllerOverwriter parent)
             {

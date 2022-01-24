@@ -14,18 +14,18 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
         {
         }
 
-        private AnimatorControllerOverwriter Overwriter { get; } = new AnimatorControllerOverwriter();
+        private readonly AnimatorControllerOverwriter Overwriter = new AnimatorControllerOverwriter();
 
-        private List<UnityEngine.Object> Assets { get; set; } = null;
-        private AnimationClip[] AnimationClipPool { get; set; } = null;
-        private AvatarMask[] AvatarMaskPool { get; set; } = null;
-        private StateMachineBehaviour[] BehaviourPool { get; set; } = null;
-        private AnimatorControllerParameter[] ParameterPool { get; set; } = null;
-        private List<AnimatorStateMachine> StateMachines { get; set; } = null;
-        private List<AnimatorState> States { get; set; } = null;
-        private AnimatorController Original { get; set; } = null;
-        private AnimatorController Overwrite { get; set; } = null;
-        private TestRandom Random { get; set; } = null;
+        private List<UnityEngine.Object> Assets = null;
+        private AnimationClip[] AnimationClipPool = null;
+        private AvatarMask[] AvatarMaskPool = null;
+        private StateMachineBehaviour[] BehaviourPool = null;
+        private AnimatorControllerParameter[] ParameterPool = null;
+        private List<AnimatorStateMachine> StateMachines = null;
+        private List<AnimatorState> States = null;
+        private AnimatorController Original = null;
+        private AnimatorController Overwrite = null;
+        private TestRandom Random = null;
 
         [SetUp]
         public void Init()
@@ -898,12 +898,12 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
 
         private class AssertDuplicationFunc
         {
-            private AnimatorControllerOverwriterTest Parent { get; }
-            private SameNameLayerMode Mode { get; }
-            private string PrefixOfOriginalLayer { get; }
-            private string PrefixOfOverwriteLayer { get; }
-            private bool MergeSameParameters { get; }
-            private bool[] IsOriginalLayerIndices { get; set; }
+            private readonly AnimatorControllerOverwriterTest Parent;
+            private readonly SameNameLayerMode Mode;
+            private readonly string PrefixOfOriginalLayer;
+            private readonly string PrefixOfOverwriteLayer;
+            private readonly bool MergeSameParameters;
+            private bool[] IsOriginalLayerIndices;
 
             public AssertDuplicationFunc
             (

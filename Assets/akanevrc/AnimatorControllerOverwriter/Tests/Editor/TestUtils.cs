@@ -5,7 +5,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
 {
     internal class TestRandom
     {
-        private Random Random { get; }
+        private readonly Random Random;
 
         public TestRandom(long seed)
         {

@@ -9,7 +9,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
     {
         private class MockOverwriter : IAnimatorControllerOverwriter
         {
-            private UI UI { get; }
+            private readonly UI UI;
 
             public MockOverwriter(UI ui)
             {
@@ -55,7 +55,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             }
         }
 
-        private UI UI { get; set; }
+        private UI UI;
 
         [SetUp]
         public void Init()

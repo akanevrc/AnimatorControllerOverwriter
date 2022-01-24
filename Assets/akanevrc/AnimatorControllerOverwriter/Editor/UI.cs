@@ -8,17 +8,16 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
 {
     public class UI : EditorWindow
     {
-        public IAnimatorControllerOverwriter Overwriter { get; set; } = new AnimatorControllerOverwriter();
-
-        public AnimatorController OriginalAnimatorController { get; set; } = null;
-        public AnimatorController OverwriteAnimatorController { get; set; } = null;
-        public SameNameLayerMode SameNameLayerMode { get; set; } = SameNameLayerMode.RaiseError;
-        public string PrefixOfOriginalLayer { get; set; } = "";
-        public string PrefixOfOverwriteLayer { get; set; } = "";
-        public bool MergeSameParameters { get; set; } = false;
-
-        private Exception Error { get; set; } = null;
-        private string LastRunningProcess { get; set; } = "";
+        public IAnimatorControllerOverwriter Overwriter = new AnimatorControllerOverwriter();
+        
+        public AnimatorController OriginalAnimatorController = null;
+        public AnimatorController OverwriteAnimatorController = null;
+        public SameNameLayerMode SameNameLayerMode = SameNameLayerMode.RaiseError;
+        public string PrefixOfOriginalLayer = "";
+        public string PrefixOfOverwriteLayer = "";
+        public bool MergeSameParameters = false;
+        public Exception Error = null;
+        public string LastRunningProcess = "";
 
         private Texture2D InfoIcon { get; set; }
         private Texture2D WarnIcon { get; set; }
