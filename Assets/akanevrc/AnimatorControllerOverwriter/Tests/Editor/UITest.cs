@@ -7,7 +7,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
 {
     public class UITest
     {
-        private class MockOverwriter : IOverwriter
+        private class MockOverwriter : IAnimatorControllerOverwriter
         {
             private UI UI { get; }
 

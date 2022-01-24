@@ -44,7 +44,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
         Replace
     }
 
-    public interface IOverwriter
+    public interface IAnimatorControllerOverwriter
     {
         void Validate
         (
@@ -68,7 +68,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
         );
     }
 
-    public class Overwriter : IOverwriter
+    public class AnimatorControllerOverwriter : IAnimatorControllerOverwriter
     {
         private class UnityEqualityComparer<T> : IEqualityComparer<T>
             where T : UnityEngine.Object
@@ -320,12 +320,12 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
 
         private class DuplicateStateMachineFunc
         {
-            private Overwriter Parent { get; }
+            private AnimatorControllerOverwriter Parent { get; }
             private HashSet<AnimatorStateMachine> Exists { get; }
             private Dictionary<AnimatorState, AnimatorState> OldToNewState { get; }
             private Dictionary<AnimatorStateMachine, AnimatorStateMachine> OldToNewStateMachine { get; }
 
-            public DuplicateStateMachineFunc(Overwriter parent)
+            public DuplicateStateMachineFunc(AnimatorControllerOverwriter parent)
             {
                 Parent               = parent;
                 Exists               = new HashSet   <AnimatorStateMachine                      >(new UnityEqualityComparer<AnimatorStateMachine>());
@@ -494,10 +494,10 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
         
         private class DuplicateMotionFunc
         {
-            private Overwriter Parent { get; }
+            private AnimatorControllerOverwriter Parent { get; }
             private HashSet<Motion> Exists { get; }
 
-            public DuplicateMotionFunc(Overwriter parent)
+            public DuplicateMotionFunc(AnimatorControllerOverwriter parent)
             {
                 Parent = parent;
                 Exists = new HashSet<Motion>(new UnityEqualityComparer<Motion>());

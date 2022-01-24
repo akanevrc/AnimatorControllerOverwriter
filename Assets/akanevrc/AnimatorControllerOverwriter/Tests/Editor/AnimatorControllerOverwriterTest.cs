@@ -14,7 +14,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
         {
         }
 
-        private Overwriter Overwriter { get; } = new Overwriter();
+        private AnimatorControllerOverwriter Overwriter { get; } = new AnimatorControllerOverwriter();
 
         private List<UnityEngine.Object> Assets { get; set; } = null;
         private AnimationClip[] AnimationClipPool { get; set; } = null;

@@ -8,7 +8,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
 {
     public class UI : EditorWindow
     {
-        public IOverwriter Overwriter { get; set; } = new Overwriter();
+        public IAnimatorControllerOverwriter Overwriter { get; set; } = new AnimatorControllerOverwriter();
 
         public AnimatorController OriginalAnimatorController { get; set; } = null;
         public AnimatorController OverwriteAnimatorController { get; set; } = null;
