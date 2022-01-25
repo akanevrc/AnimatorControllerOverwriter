@@ -505,6 +505,26 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
         }
 
         [Test]
+        public void GenerateToBeSuccessWhenOverwriteIsNull()
+        {
+            Overwrite = null;
+
+            var path = Util.GetWorkFilePath();
+
+            try
+            {
+                var result = Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.RaiseError, "[Original]", "[Overwrite]", false);
+
+                Assert.That(AssetDatabase.GetAssetPath(result), Is.EqualTo(path));
+                new AssertDuplicationFunc(this, SameNameLayerMode.RaiseError, "[Original]", "[Overwrite]", false).Invoke(result);
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(path);
+            }
+        }
+
+        [Test]
         public void GenerateToBeSuccessWhenDoNotMergeSameParameters()
         {
             var path = Util.GetWorkFilePath();
@@ -903,7 +923,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             private readonly string PrefixOfOriginalLayer;
             private readonly string PrefixOfOverwriteLayer;
             private readonly bool MergeSameParameters;
-            private bool[] IsOriginalLayerIndices;
+            private bool[] IsOriginalLayerIndices = null;
 
             public AssertDuplicationFunc
             (
@@ -926,10 +946,14 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
                 Assert.That(result.name     , Is.EqualTo($"{Parent.Original.name}_overwritten"));
                 Assert.That(result.hideFlags, Is.EqualTo(HideFlags.None));
 
-                var concatLayers = ConcatLayers(Parent.Original.layers, Parent.Overwrite.layers);
+                var concatLayers = Parent.Overwrite == null ?
+                    Parent.Original.layers :
+                    ConcatLayers(Parent.Original.layers, Parent.Overwrite.layers);
                 Assert.That(result.layers.Length, Is.EqualTo(concatLayers.Length));
 
-                var concatParameters = ConcatParameters(Parent.Original.parameters, Parent.Overwrite.parameters);
+                var concatParameters = Parent.Overwrite == null ?
+                    Parent.Original.parameters :
+                    ConcatParameters(Parent.Original.parameters, Parent.Overwrite.parameters);
                 Assert.That(result.parameters.Length, Is.EqualTo(concatParameters.Length));
 
                 for (var i = 0; i < result.layers.Length; i++)
@@ -1017,7 +1041,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
 
                 if (typeof(AnimatorControllerLayer).IsAssignableFrom(parentType) && propertyName == "name")
                 {
-                    if (IsOriginalLayerIndices[parentIndex])
+                    if (IsOriginalLayerIndices == null || IsOriginalLayerIndices[parentIndex])
                     {
                         Assert.That(result, Is.EqualTo(PrefixOfOriginalLayer + original));
                     }

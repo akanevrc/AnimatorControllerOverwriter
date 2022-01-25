@@ -18,12 +18,13 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
         public bool MergeSameParameters = false;
         public Exception Error = null;
         public string LastRunningProcess = "";
+        public Vector2 ScrollPosition = new Vector2(0F, 0F);
 
-        private Texture2D InfoIcon { get; set; }
-        private Texture2D WarnIcon { get; set; }
-        private Texture2D ErrorIcon { get; set; }
+        private Texture2D InfoIcon;
+        private Texture2D WarnIcon;
+        private Texture2D ErrorIcon;
 
-        private bool ButtonsEnabled =>  OriginalAnimatorController != null && OverwriteAnimatorController != null;
+        private bool ButtonsEnabled => OriginalAnimatorController != null;
 
         private void OnEnable()
         {
@@ -45,15 +46,10 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
             EditorWindow.GetWindow<UI>().Show();
         }
 
-        [MenuItem("Tools/Test")]
-        public static void Test()
-        {
-            var anim = new AnimationClip();
-            
-        }
-
         private void OnGUI()
         {
+            ScrollPosition = EditorGUILayout.BeginScrollView(ScrollPosition);
+
             EditorGUIUtility.labelWidth = 200.0F;
 
             GUILayout.Label("Overwrite AnimatorControllers", new GUIStyle(EditorStyles.largeLabel));
@@ -66,7 +62,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
                     "Base AnimatorController",
                     OriginalAnimatorController,
                     typeof(AnimatorController),
-                    false
+                    true
                 );
             OverwriteAnimatorController =
                 (AnimatorController)EditorGUILayout.ObjectField
@@ -74,7 +70,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
                     "Overwriting AnimatorController",
                     OverwriteAnimatorController,
                     typeof(AnimatorController),
-                    false
+                    true
                 );
 
             EditorGUILayout.Space();
@@ -115,6 +111,10 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
             EditorGUILayout.Space();
 
             MergeSameParameters = GUILayout.Toggle(MergeSameParameters, "Merge same parameters");
+
+            EditorGUILayout.Space();
+
+            //AnimationClip
 
             EditorGUILayout.Space();
 
@@ -218,6 +218,8 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
                     new GUIStyle(EditorStyles.helpBox)
                 );
             }
+
+            EditorGUILayout.EndScrollView();
         }
 
         public void Validate()

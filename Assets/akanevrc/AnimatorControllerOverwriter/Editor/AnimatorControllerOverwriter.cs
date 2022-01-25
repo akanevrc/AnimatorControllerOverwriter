@@ -165,14 +165,14 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
             result.name   = $"{original.name}_overwritten";
             result.parameters = OverwriteParameters
                 (
-                    original .parameters,
-                    overwrite.parameters,
+                    original.parameters,
+                    overwrite == null ? new AnimatorControllerParameter[0] : overwrite.parameters,
                     mergeSameParameters
                 );
             result.layers = OverwriteLayers
                 (
-                    original .layers,
-                    overwrite.layers,
+                    original.layers,
+                    overwrite == null ? new AnimatorControllerLayer[0] : overwrite.layers,
                     mode,
                     prefixOfOriginalLayer,
                     prefixOfOverwriteLayer
