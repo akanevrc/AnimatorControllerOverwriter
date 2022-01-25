@@ -45,6 +45,13 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
             EditorWindow.GetWindow<UI>().Show();
         }
 
+        [MenuItem("Tools/Test")]
+        public static void Test()
+        {
+            var anim = new AnimationClip();
+            
+        }
+
         private void OnGUI()
         {
             EditorGUIUtility.labelWidth = 200.0F;

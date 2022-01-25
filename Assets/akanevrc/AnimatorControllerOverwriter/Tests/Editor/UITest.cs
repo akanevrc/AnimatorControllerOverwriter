@@ -63,8 +63,8 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             UI = ScriptableObject.CreateInstance<UI>();
             
             UI.Overwriter                  = new MockOverwriter(UI);
-            UI.OriginalAnimatorController  = AnimatorController.CreateAnimatorControllerAtPath($"Assets/{GUID.Generate()}.controller");
-            UI.OverwriteAnimatorController = AnimatorController.CreateAnimatorControllerAtPath($"Assets/{GUID.Generate()}.controller");
+            UI.OriginalAnimatorController  = AnimatorController.CreateAnimatorControllerAtPath(Util.GetWorkFilePath());
+            UI.OverwriteAnimatorController = AnimatorController.CreateAnimatorControllerAtPath(Util.GetWorkFilePath());
             UI.SameNameLayerMode           = SameNameLayerMode.Replace;
             UI.PrefixOfOriginalLayer       = "[Original]";
             UI.PrefixOfOverwriteLayer      = "[Overwrite]";

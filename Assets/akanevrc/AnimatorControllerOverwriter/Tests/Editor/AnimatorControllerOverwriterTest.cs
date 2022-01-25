@@ -64,7 +64,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
 
         private AnimatorController GenerateAnimatorController()
         {
-            var result = AnimatorController.CreateAnimatorControllerAtPath($"Assets/{GUID.Generate()}.controller");
+            var result = AnimatorController.CreateAnimatorControllerAtPath(Util.GetWorkFilePath());
             Assets.Add(result);
             
             SetProperties
@@ -507,7 +507,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
         [Test]
         public void GenerateToBeSuccessWhenDoNotMergeSameParameters()
         {
-            var path = $"Assets/{GUID.Generate()}.controller";
+            var path = Util.GetWorkFilePath();
 
             try
             {
@@ -537,7 +537,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             Original .AddParameter(param1);
             Overwrite.AddParameter(param2);
 
-            var path = $"Assets/{GUID.Generate()}.controller";
+            var path = Util.GetWorkFilePath();
 
             try
             {
@@ -564,7 +564,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             Original .AddLayer(layer1);
             Overwrite.AddLayer(layer2);
 
-            var path = $"Assets/{GUID.Generate()}.controller";
+            var path = Util.GetWorkFilePath();
 
             try
             {
@@ -595,7 +595,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             Original .AddParameter(param1);
             Overwrite.AddParameter(param2);
             
-            var path = $"Assets/{GUID.Generate()}.controller";
+            var path = Util.GetWorkFilePath();
 
             try
             {
@@ -626,7 +626,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             Original .AddParameter(param1);
             Overwrite.AddParameter(param2);
             
-            var path = $"Assets/{GUID.Generate()}.controller";
+            var path = Util.GetWorkFilePath();
 
             try
             {
@@ -654,7 +654,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             Original .AddLayer(layer1);
             Overwrite.AddLayer(layer2);
 
-            var path = $"Assets/{GUID.Generate()}.controller";
+            var path = Util.GetWorkFilePath();
 
             try
             {
@@ -681,7 +681,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             Original .AddLayer(layer1);
             Overwrite.AddLayer(layer2);
 
-            var path = $"Assets/{GUID.Generate()}.controller";
+            var path = Util.GetWorkFilePath();
 
             try
             {
@@ -713,7 +713,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
                 .Concat(new AnimatorControllerLayer[] { syncLayer2 })
                 .ToArray();
 
-            var path = $"Assets/{GUID.Generate()}.controller";
+            var path = Util.GetWorkFilePath();
 
             try
             {
@@ -747,7 +747,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
                 .Concat(new AnimatorControllerLayer[] { syncLayer })
                 .ToArray();
 
-            var path = $"Assets/{GUID.Generate()}.controller";
+            var path = Util.GetWorkFilePath();
 
             try
             {
@@ -780,7 +780,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
                 .Concat(new AnimatorControllerLayer[] { syncLayer })
                 .ToArray();
 
-            var path = $"Assets/{GUID.Generate()}.controller";
+            var path = Util.GetWorkFilePath();
 
             try
             {
@@ -814,7 +814,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
                 .Concat(new AnimatorControllerLayer[] { syncLayer })
                 .ToArray();
 
-            var path = $"Assets/{GUID.Generate()}.controller";
+            var path = Util.GetWorkFilePath();
 
             try
             {
@@ -847,7 +847,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
                 .Concat(new AnimatorControllerLayer[] { syncLayer })
                 .ToArray();
 
-            var path = $"Assets/{GUID.Generate()}.controller";
+            var path = Util.GetWorkFilePath();
 
             try
             {
@@ -880,7 +880,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
                 .ToArray();
             Overwrite.layers = new AnimatorControllerLayer[] { layer2 }.Concat(Overwrite.layers).ToArray();
 
-            var path = $"Assets/{GUID.Generate()}.controller";
+            var path = Util.GetWorkFilePath();
 
             try
             {

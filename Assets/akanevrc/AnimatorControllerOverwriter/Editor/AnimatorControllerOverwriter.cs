@@ -94,7 +94,8 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
             bool mergeSameParameters
         )
         {
-            var result = AnimatorController.CreateAnimatorControllerAtPath($"Assets/{GUID.Generate()}.controller");
+            var path   = Util.GetWorkFilePath();
+            var result = AnimatorController.CreateAnimatorControllerAtPath(path);
 
             try
             {
@@ -111,7 +112,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
             }
             finally
             {
-                AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(result));
+                AssetDatabase.DeleteAsset(path);
             }
         }
 
