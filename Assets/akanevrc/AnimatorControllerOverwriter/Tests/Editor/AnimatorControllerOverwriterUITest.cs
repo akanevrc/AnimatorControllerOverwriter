@@ -5,13 +5,13 @@ using UnityEngine;
 
 namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
 {
-    public class UITest
+    public class AnimatorControllerOverwriterUITest
     {
         private class MockOverwriter : IAnimatorControllerOverwriter
         {
-            private readonly UI UI;
+            private readonly AnimatorControllerOverwriterUI UI;
 
-            public MockOverwriter(UI ui)
+            public MockOverwriter(AnimatorControllerOverwriterUI ui)
             {
                 UI = ui;
             }
@@ -20,18 +20,24 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             (
                 AnimatorController original,
                 AnimatorController overwrite,
-                SameNameLayerMode mode,
+                SameNameLayerMode sameNameLayerMode,
                 string prefixOfOriginalLayer,
                 string prefixOfOverwriteLayer,
-                bool mergeSameParameters
+                bool mergeSameParameters,
+                GameObject overwriteObject,
+                GameObject originalObject,
+                AnimationClipMoveMode animationClipMoveMode
             )
             {
-                Assert.That(original , Is.SameAs(UI.OriginalAnimatorController));
-                Assert.That(overwrite, Is.SameAs(UI.OverwriteAnimatorController));
-                Assert.That(mode, Is.EqualTo(UI.SameNameLayerMode));
+                Assert.That(original              , Is.SameAs (UI.OriginalAnimatorController));
+                Assert.That(overwrite             , Is.SameAs (UI.OverwriteAnimatorController));
+                Assert.That(sameNameLayerMode     , Is.EqualTo(UI.SameNameLayerMode));
                 Assert.That(prefixOfOriginalLayer , Is.EqualTo(UI.PrefixOfOriginalLayer));
                 Assert.That(prefixOfOverwriteLayer, Is.EqualTo(UI.PrefixOfOverwriteLayer));
                 Assert.That(mergeSameParameters   , Is.EqualTo(UI.MergeSameParameters));
+                Assert.That(overwriteObject       , Is.EqualTo(UI.OverwriteObject));
+                Assert.That(originalObject        , Is.EqualTo(UI.OriginalObject));
+                Assert.That(animationClipMoveMode , Is.EqualTo(UI.AnimationClipMoveMode));
             }
 
             public AnimatorController Generate
@@ -42,29 +48,35 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
                 SameNameLayerMode mode,
                 string prefixOfOriginalLayer,
                 string prefixOfOverwriteLayer,
-                bool mergeSameParameters
+                bool mergeSameParameters,
+                GameObject overwriteObject,
+                GameObject originalObject,
+                AnimationClipMoveMode animationClipMoveMode
             )
             {
-                Assert.That(original , Is.SameAs(UI.OriginalAnimatorController));
-                Assert.That(overwrite, Is.SameAs(UI.OverwriteAnimatorController));
-                Assert.That(mode, Is.EqualTo(UI.SameNameLayerMode));
+                Assert.That(original              , Is.SameAs (UI.OriginalAnimatorController));
+                Assert.That(overwrite             , Is.SameAs (UI.OverwriteAnimatorController));
+                Assert.That(mode                  , Is.EqualTo(UI.SameNameLayerMode));
                 Assert.That(prefixOfOriginalLayer , Is.EqualTo(UI.PrefixOfOriginalLayer));
                 Assert.That(prefixOfOverwriteLayer, Is.EqualTo(UI.PrefixOfOverwriteLayer));
                 Assert.That(mergeSameParameters   , Is.EqualTo(UI.MergeSameParameters));
+                Assert.That(overwriteObject       , Is.EqualTo(UI.OverwriteObject));
+                Assert.That(originalObject        , Is.EqualTo(UI.OriginalObject));
+                Assert.That(animationClipMoveMode , Is.EqualTo(UI.AnimationClipMoveMode));
                 return null;
             }
         }
 
-        private UI UI;
+        private AnimatorControllerOverwriterUI UI;
 
         [SetUp]
         public void Init()
         {
-            UI = ScriptableObject.CreateInstance<UI>();
+            UI = ScriptableObject.CreateInstance<AnimatorControllerOverwriterUI>();
             
             UI.Overwriter                  = new MockOverwriter(UI);
-            UI.OriginalAnimatorController  = AnimatorController.CreateAnimatorControllerAtPath(Util.GetWorkFilePath());
-            UI.OverwriteAnimatorController = AnimatorController.CreateAnimatorControllerAtPath(Util.GetWorkFilePath());
+            UI.OriginalAnimatorController  = AnimatorController.CreateAnimatorControllerAtPath(TestUtil.GetControllerWorkFilePath());
+            UI.OverwriteAnimatorController = AnimatorController.CreateAnimatorControllerAtPath(TestUtil.GetControllerWorkFilePath());
             UI.SameNameLayerMode           = SameNameLayerMode.Replace;
             UI.PrefixOfOriginalLayer       = "[Original]";
             UI.PrefixOfOverwriteLayer      = "[Overwrite]";

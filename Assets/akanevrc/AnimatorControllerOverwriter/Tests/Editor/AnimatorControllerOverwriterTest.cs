@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using NUnit.Framework;
 using UnityEditor;
@@ -16,7 +17,6 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
 
         private readonly AnimatorControllerOverwriter Overwriter = new AnimatorControllerOverwriter();
 
-        private List<UnityEngine.Object> Assets = null;
         private AnimationClip[] AnimationClipPool = null;
         private AvatarMask[] AvatarMaskPool = null;
         private StateMachineBehaviour[] BehaviourPool = null;
@@ -32,26 +32,20 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
         {
             Random = new TestRandom(DateTime.Now.Ticks);
 
-            Assets            = new List<UnityEngine.Object>();
             AnimationClipPool = GenerateArray(GenerateAnimationClip, 1, 5);
             AvatarMaskPool    = GenerateArray(GenerateAvatarMask   , 1, 5);
             BehaviourPool     = GenerateArray(GenerateBehaviour    , 1, 5);
             
-            ParameterPool = GenerateArray(GenerateParameter , 0, 5);
+            ParameterPool = GenerateArray(GenerateParameter, 0, 5);
             Original      = GenerateAnimatorController();
 
-            ParameterPool = GenerateArray(GenerateParameter , 0, 5);
+            ParameterPool = GenerateArray(GenerateParameter, 0, 5);
             Overwrite     = GenerateAnimatorController();
         }
 
         [TearDown]
         public void Cleanup()
         {
-            foreach (var asset in Assets)
-            {
-                AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(asset));
-            }
-            Assets            = null;
             AnimationClipPool = null;
             AvatarMaskPool    = null;
             BehaviourPool     = null;
@@ -60,18 +54,20 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             States            = null;
             Original          = null;
             Overwrite         = null;
+
+            TestUtil.CleanupWorkFolder();
         }
 
         private AnimatorController GenerateAnimatorController()
         {
-            var result = AnimatorController.CreateAnimatorControllerAtPath(Util.GetWorkFilePath());
-            Assets.Add(result);
+            var result = AnimatorController.CreateAnimatorControllerAtPath(TestUtil.GetControllerWorkFilePath());
             
             SetProperties
             (
                 result,
                 "hideFlags",
                 "layers",
+                "name",
                 "parameters"
             );
 
@@ -480,7 +476,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
         {
             Assert.That
             (
-                () => Overwriter.Validate(Original, Overwrite, SameNameLayerMode.RaiseError, "", "", false),
+                () => Overwriter.Validate(Original, Overwrite, SameNameLayerMode.RaiseError, "", "", false, null, null, AnimationClipMoveMode.Disable),
                 Throws.Nothing
             );
         }
@@ -499,7 +495,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             
             Assert.That
             (
-                () => Overwriter.Validate(Original, Overwrite, SameNameLayerMode.RaiseError, "", "", false),
+                () => Overwriter.Validate(Original, Overwrite, SameNameLayerMode.RaiseError, "", "", false, null, null, AnimationClipMoveMode.Disable),
                 Throws.TypeOf<LayerConflictException>()
             );
         }
@@ -509,37 +505,23 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
         {
             Overwrite = null;
 
-            var path = Util.GetWorkFilePath();
+            var folderPath = TestUtil.WorkFolderPath;
 
-            try
-            {
-                var result = Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.RaiseError, "[Original]", "[Overwrite]", false);
+            var result = Overwriter.Generate(folderPath, Original, Overwrite, SameNameLayerMode.RaiseError, "[Original]", "[Overwrite]", false, null, null, AnimationClipMoveMode.Disable);
 
-                Assert.That(AssetDatabase.GetAssetPath(result), Is.EqualTo(path));
-                new AssertDuplicationFunc(this, SameNameLayerMode.RaiseError, "[Original]", "[Overwrite]", false).Invoke(result);
-            }
-            finally
-            {
-                AssetDatabase.DeleteAsset(path);
-            }
+            Assert.That(Path.GetDirectoryName(AssetDatabase.GetAssetPath(result)), Is.EqualTo(Path.Combine(Path.GetDirectoryName(folderPath), Path.GetFileName(folderPath))));
+            new AssertDuplicationFunc(this, SameNameLayerMode.RaiseError, "[Original]", "[Overwrite]", false).Invoke(result);
         }
 
         [Test]
         public void GenerateToBeSuccessWhenDoNotMergeSameParameters()
         {
-            var path = Util.GetWorkFilePath();
+            var folderPath = TestUtil.WorkFolderPath;
 
-            try
-            {
-                var result = Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.RaiseError, "[Original]", "[Overwrite]", false);
+            var result = Overwriter.Generate(folderPath, Original, Overwrite, SameNameLayerMode.RaiseError, "[Original]", "[Overwrite]", false, null, null, AnimationClipMoveMode.Disable);
 
-                Assert.That(AssetDatabase.GetAssetPath(result), Is.EqualTo(path));
-                new AssertDuplicationFunc(this, SameNameLayerMode.RaiseError, "[Original]", "[Overwrite]", false).Invoke(result);
-            }
-            finally
-            {
-                AssetDatabase.DeleteAsset(path);
-            }
+            Assert.That(Path.GetDirectoryName(AssetDatabase.GetAssetPath(result)), Is.EqualTo(Path.Combine(Path.GetDirectoryName(folderPath), Path.GetFileName(folderPath))));
+            new AssertDuplicationFunc(this, SameNameLayerMode.RaiseError, "[Original]", "[Overwrite]", false).Invoke(result);
         }
 
         [Test]
@@ -557,19 +539,12 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             Original .AddParameter(param1);
             Overwrite.AddParameter(param2);
 
-            var path = Util.GetWorkFilePath();
+            var folderPath = TestUtil.WorkFolderPath;
 
-            try
-            {
-                var result = Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.RaiseError, "[Original]", "[Overwrite]", true);
+            var result = Overwriter.Generate(folderPath, Original, Overwrite, SameNameLayerMode.RaiseError, "[Original]", "[Overwrite]", true, null, null, AnimationClipMoveMode.Disable);
 
-                Assert.That(AssetDatabase.GetAssetPath(result), Is.EqualTo(path));
-                new AssertDuplicationFunc(this, SameNameLayerMode.RaiseError, "[Original]", "[Overwrite]", false).Invoke(result);
-            }
-            finally
-            {
-                AssetDatabase.DeleteAsset(path);
-            }
+            Assert.That(Path.GetDirectoryName(AssetDatabase.GetAssetPath(result)), Is.EqualTo(Path.Combine(Path.GetDirectoryName(folderPath), Path.GetFileName(folderPath))));
+            new AssertDuplicationFunc(this, SameNameLayerMode.RaiseError, "[Original]", "[Overwrite]", false).Invoke(result);
         }
 
         [Test]
@@ -584,20 +559,13 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             Original .AddLayer(layer1);
             Overwrite.AddLayer(layer2);
 
-            var path = Util.GetWorkFilePath();
+            var folderPath = TestUtil.WorkFolderPath;
 
-            try
-            {
-                Assert.That
-                (
-                    () => Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.RaiseError, "", "", false),
-                    Throws.TypeOf<LayerConflictException>()
-                );
-            }
-            finally
-            {
-                AssetDatabase.DeleteAsset(path);
-            }
+            Assert.That
+            (
+                () => Overwriter.Generate(folderPath, Original, Overwrite, SameNameLayerMode.RaiseError, "", "", false, null, null, AnimationClipMoveMode.Disable),
+                Throws.TypeOf<LayerConflictException>()
+            );
         }
 
         [Test]
@@ -615,20 +583,13 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             Original .AddParameter(param1);
             Overwrite.AddParameter(param2);
             
-            var path = Util.GetWorkFilePath();
+            var folderPath = TestUtil.WorkFolderPath;
 
-            try
-            {
-                Assert.That
-                (
-                    () => Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.RaiseError, "[Original]", "[Overwrite]", false),
-                    Throws.TypeOf<ParameterConflictException>()
-                );
-            }
-            finally
-            {
-                AssetDatabase.DeleteAsset(path);
-            }
+            Assert.That
+            (
+                () => Overwriter.Generate(folderPath, Original, Overwrite, SameNameLayerMode.RaiseError, "[Original]", "[Overwrite]", false, null, null, AnimationClipMoveMode.Disable),
+                Throws.TypeOf<ParameterConflictException>()
+            );
         }
 
         [Test]
@@ -646,20 +607,13 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             Original .AddParameter(param1);
             Overwrite.AddParameter(param2);
             
-            var path = Util.GetWorkFilePath();
+            var folderPath = TestUtil.WorkFolderPath;
 
-            try
-            {
-                Assert.That
-                (
-                    () => Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.RaiseError, "[Original]", "[Overwrite]", true),
-                    Throws.TypeOf<ParameterConflictException>()
-                );
-            }
-            finally
-            {
-                AssetDatabase.DeleteAsset(path);
-            }
+            Assert.That
+            (
+                () => Overwriter.Generate(folderPath, Original, Overwrite, SameNameLayerMode.RaiseError, "[Original]", "[Overwrite]", true, null, null, AnimationClipMoveMode.Disable),
+                Throws.TypeOf<ParameterConflictException>()
+            );
         }
 
         [Test]
@@ -674,19 +628,12 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             Original .AddLayer(layer1);
             Overwrite.AddLayer(layer2);
 
-            var path = Util.GetWorkFilePath();
+            var folderPath = TestUtil.WorkFolderPath;
 
-            try
-            {
-                var result = Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.DoNotCopy, "", "", false);
+            var result = Overwriter.Generate(folderPath, Original, Overwrite, SameNameLayerMode.DoNotCopy, "", "", false, null, null, AnimationClipMoveMode.Disable);
 
-                Assert.That(AssetDatabase.GetAssetPath(result), Is.EqualTo(path));
-                new AssertDuplicationFunc(this, SameNameLayerMode.DoNotCopy, "", "", false).Invoke(result);
-            }
-            finally
-            {
-                AssetDatabase.DeleteAsset(path);
-            }
+            Assert.That(Path.GetDirectoryName(AssetDatabase.GetAssetPath(result)), Is.EqualTo(Path.Combine(Path.GetDirectoryName(folderPath), Path.GetFileName(folderPath))));
+            new AssertDuplicationFunc(this, SameNameLayerMode.DoNotCopy, "", "", false).Invoke(result);
         }
 
         [Test]
@@ -701,19 +648,12 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
             Original .AddLayer(layer1);
             Overwrite.AddLayer(layer2);
 
-            var path = Util.GetWorkFilePath();
+            var folderPath = TestUtil.WorkFolderPath;
 
-            try
-            {
-                var result = Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.Replace, "", "", false);
+            var result = Overwriter.Generate(folderPath, Original, Overwrite, SameNameLayerMode.Replace, "", "", false, null, null, AnimationClipMoveMode.Disable);
 
-                Assert.That(AssetDatabase.GetAssetPath(result), Is.EqualTo(path));
-                new AssertDuplicationFunc(this, SameNameLayerMode.Replace, "", "", false).Invoke(result);
-            }
-            finally
-            {
-                AssetDatabase.DeleteAsset(path);
-            }
+            Assert.That(Path.GetDirectoryName(AssetDatabase.GetAssetPath(result)), Is.EqualTo(Path.Combine(Path.GetDirectoryName(folderPath), Path.GetFileName(folderPath))));
+            new AssertDuplicationFunc(this, SameNameLayerMode.Replace, "", "", false).Invoke(result);
         }
 
         [Test]
@@ -733,20 +673,13 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
                 .Concat(new AnimatorControllerLayer[] { syncLayer2 })
                 .ToArray();
 
-            var path = Util.GetWorkFilePath();
+            var folderPath = TestUtil.WorkFolderPath;
 
-            try
-            {
-                var result = Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.DoNotCopy, "", "", false);
+            var result = Overwriter.Generate(folderPath, Original, Overwrite, SameNameLayerMode.DoNotCopy, "", "", false, null, null, AnimationClipMoveMode.Disable);
 
-                Assert.That(AssetDatabase.GetAssetPath(result), Is.EqualTo(path));
-                Assert.That(result.layers[Original.layers.Length - 1].syncedLayerIndex, Is.EqualTo(0));
-                Assert.That(result.layers[result  .layers.Length - 1].syncedLayerIndex, Is.EqualTo(Original.layers.Length));
-            }
-            finally
-            {
-                AssetDatabase.DeleteAsset(path);
-            }
+            Assert.That(Path.GetDirectoryName(AssetDatabase.GetAssetPath(result)), Is.EqualTo(Path.Combine(Path.GetDirectoryName(folderPath), Path.GetFileName(folderPath))));
+            Assert.That(result.layers[Original.layers.Length - 1].syncedLayerIndex, Is.EqualTo(0));
+            Assert.That(result.layers[result  .layers.Length - 1].syncedLayerIndex, Is.EqualTo(Original.layers.Length));
         }
 
         [Test]
@@ -767,19 +700,12 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
                 .Concat(new AnimatorControllerLayer[] { syncLayer })
                 .ToArray();
 
-            var path = Util.GetWorkFilePath();
+            var folderPath = TestUtil.WorkFolderPath;
 
-            try
-            {
-                var result = Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.DoNotCopy, "", "", false);
+            var result = Overwriter.Generate(folderPath, Original, Overwrite, SameNameLayerMode.DoNotCopy, "", "", false, null, null, AnimationClipMoveMode.Disable);
 
-                Assert.That(AssetDatabase.GetAssetPath(result), Is.EqualTo(path));
-                Assert.That(result.layers[result.layers.Length - 1].syncedLayerIndex, Is.EqualTo(Original.layers.Length));
-            }
-            finally
-            {
-                AssetDatabase.DeleteAsset(path);
-            }
+            Assert.That(Path.GetDirectoryName(AssetDatabase.GetAssetPath(result)), Is.EqualTo(Path.Combine(Path.GetDirectoryName(folderPath), Path.GetFileName(folderPath))));
+            Assert.That(result.layers[result.layers.Length - 1].syncedLayerIndex, Is.EqualTo(Original.layers.Length));
         }
 
         [Test]
@@ -800,20 +726,13 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
                 .Concat(new AnimatorControllerLayer[] { syncLayer })
                 .ToArray();
 
-            var path = Util.GetWorkFilePath();
+            var folderPath = TestUtil.WorkFolderPath;
 
-            try
-            {
-                Assert.That
-                (
-                    () => Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.DoNotCopy, "", "", false),
-                    Throws.TypeOf<SyncedLayerOverwrittenException>()
-                );
-            }
-            finally
-            {
-                AssetDatabase.DeleteAsset(path);
-            }
+            Assert.That
+            (
+                () => Overwriter.Generate(folderPath, Original, Overwrite, SameNameLayerMode.DoNotCopy, "", "", false, null, null, AnimationClipMoveMode.Disable),
+                Throws.TypeOf<SyncedLayerOverwrittenException>()
+            );
         }
 
         [Test]
@@ -834,19 +753,12 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
                 .Concat(new AnimatorControllerLayer[] { syncLayer })
                 .ToArray();
 
-            var path = Util.GetWorkFilePath();
+            var folderPath = TestUtil.WorkFolderPath;
 
-            try
-            {
-                var result = Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.Replace, "", "", false);
+            var result = Overwriter.Generate(folderPath, Original, Overwrite, SameNameLayerMode.Replace, "", "", false, null, null, AnimationClipMoveMode.Disable);
 
-                Assert.That(AssetDatabase.GetAssetPath(result), Is.EqualTo(path));
-                Assert.That(result.layers[result.layers.Length - 1].syncedLayerIndex, Is.EqualTo(0));
-            }
-            finally
-            {
-                AssetDatabase.DeleteAsset(path);
-            }
+            Assert.That(Path.GetDirectoryName(AssetDatabase.GetAssetPath(result)), Is.EqualTo(Path.Combine(Path.GetDirectoryName(folderPath), Path.GetFileName(folderPath))));
+            Assert.That(result.layers[result.layers.Length - 1].syncedLayerIndex, Is.EqualTo(0));
         }
 
         [Test]
@@ -867,19 +779,12 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
                 .Concat(new AnimatorControllerLayer[] { syncLayer })
                 .ToArray();
 
-            var path = Util.GetWorkFilePath();
+            var folderPath = TestUtil.WorkFolderPath;
 
-            try
-            {
-                var result = Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.Replace, "", "", false);
+            var result = Overwriter.Generate(folderPath, Original, Overwrite, SameNameLayerMode.Replace, "", "", false, null, null, AnimationClipMoveMode.Disable);
 
-                Assert.That(AssetDatabase.GetAssetPath(result), Is.EqualTo(path));
-                Assert.That(result.layers[result.layers.Length - 1].syncedLayerIndex, Is.EqualTo(Original.layers.Length));
-            }
-            finally
-            {
-                AssetDatabase.DeleteAsset(path);
-            }
+            Assert.That(Path.GetDirectoryName(AssetDatabase.GetAssetPath(result)), Is.EqualTo(Path.Combine(Path.GetDirectoryName(folderPath), Path.GetFileName(folderPath))));
+            Assert.That(result.layers[result.layers.Length - 1].syncedLayerIndex, Is.EqualTo(Original.layers.Length));
         }
 
         [Test]
@@ -900,20 +805,13 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
                 .ToArray();
             Overwrite.layers = new AnimatorControllerLayer[] { layer2 }.Concat(Overwrite.layers).ToArray();
 
-            var path = Util.GetWorkFilePath();
+            var folderPath = TestUtil.WorkFolderPath;
 
-            try
-            {
-                Assert.That
-                (
-                    () => Overwriter.Generate(path, Original, Overwrite, SameNameLayerMode.Replace, "", "", false),
-                    Throws.TypeOf<SyncedLayerOverwrittenException>()
-                );
-            }
-            finally
-            {
-                AssetDatabase.DeleteAsset(path);
-            }
+            Assert.That
+            (
+                () => Overwriter.Generate(folderPath, Original, Overwrite, SameNameLayerMode.Replace, "", "", false, null, null, AnimationClipMoveMode.Disable),
+                Throws.TypeOf<SyncedLayerOverwrittenException>()
+            );
         }
 
         private class AssertDuplicationFunc
@@ -1118,12 +1016,14 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
                 }
                 else if
                 (
-                    typeof(AnimationClip        ).IsAssignableFrom(type) ||
                     typeof(AvatarMask           ).IsAssignableFrom(type) ||
                     typeof(StateMachineBehaviour).IsAssignableFrom(type)
                 )
                 {
                     Assert.That(result.GetInstanceID(), Is.EqualTo(original.GetInstanceID()));
+                }
+                else if (typeof(AnimationClip).IsAssignableFrom(type))
+                {
                 }
                 else
                 {

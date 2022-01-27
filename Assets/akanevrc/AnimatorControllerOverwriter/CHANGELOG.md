@@ -1,5 +1,11 @@
 # Change Log
 
+## 2.0.0
+
+New feature
+
+- Move AnimationClips' hierarchy
+
 ## 1.1.2
 
 Bug Fix

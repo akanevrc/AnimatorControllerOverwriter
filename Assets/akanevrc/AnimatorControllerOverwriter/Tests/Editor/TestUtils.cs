@@ -1,8 +1,35 @@
 using System;
+using System.IO;
 using System.Linq;
+using UnityEditor;
 
 namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
 {
+    internal static class TestUtil
+    {
+        public static readonly string WorkFolderPath = "Assets/akanevrc/AnimatorControllerOverwriter/Tests/Editor/Work";
+        private static readonly string ControllerWorkFilePath = "Assets/akanevrc/AnimatorControllerOverwriter/Tests/Editor/Work/tmp.controller";
+        private static readonly string AnimWorkFilePath = "Assets/akanevrc/AnimatorControllerOverwriter/Tests/Editor/Work/tmp.anim";
+
+        public static string GetControllerWorkFilePath()
+        {
+            return AssetDatabase.GenerateUniqueAssetPath(ControllerWorkFilePath);
+        }
+
+        public static string GetAnimWorkFilePath()
+        {
+            return AssetDatabase.GenerateUniqueAssetPath(AnimWorkFilePath);
+        }
+
+        public static void CleanupWorkFolder()
+        {
+            foreach (var assetPath in Directory.GetFiles(WorkFolderPath).Where(x => Path.GetExtension(x) != ".txt" && Path.GetExtension(x) != ".meta"))
+            {
+                AssetDatabase.DeleteAsset(assetPath);
+            }
+        }
+    }
+
     internal class TestRandom
     {
         private readonly Random Random;

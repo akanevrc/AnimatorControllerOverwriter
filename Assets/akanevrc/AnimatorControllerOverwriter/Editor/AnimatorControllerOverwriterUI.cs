@@ -1,14 +1,14 @@
 using System;
-using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
 
 namespace akanevrc.AnimatorControllerOverwriter.Editor
 {
-    public class UI : EditorWindow
+    public class AnimatorControllerOverwriterUI : EditorWindow
     {
         public IAnimatorControllerOverwriter Overwriter = new AnimatorControllerOverwriter();
+        public IAnimationClipMover AnimationClipMover = new AnimationClipMover();
         
         public AnimatorController OriginalAnimatorController = null;
         public AnimatorController OverwriteAnimatorController = null;
@@ -16,6 +16,11 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
         public string PrefixOfOriginalLayer = "";
         public string PrefixOfOverwriteLayer = "";
         public bool MergeSameParameters = false;
+
+        public AnimationClipMoveMode AnimationClipMoveMode = AnimationClipMoveMode.Disable;
+        public GameObject OriginalObject = null;
+        public GameObject OverwriteObject = null;
+
         public Exception Error = null;
         public string LastRunningProcess = "";
         public Vector2 ScrollPosition = new Vector2(0F, 0F);
@@ -24,26 +29,19 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
         private Texture2D WarnIcon;
         private Texture2D ErrorIcon;
 
-        private bool ButtonsEnabled => OriginalAnimatorController != null;
+        private bool ButtonsEnabled => OriginalAnimatorController != null || OverwriteAnimatorController != null;
 
         private void OnEnable()
         {
-            InfoIcon  = LoadBuiltInIcon("console.infoicon");
-            WarnIcon  = LoadBuiltInIcon("console.warnicon");
-            ErrorIcon = LoadBuiltInIcon("console.erroricon");
-        }
-
-        private Texture2D LoadBuiltInIcon(string name)
-        {
-            return Resources.FindObjectsOfTypeAll<Texture2D>()
-                .Where(x => AssetDatabase.GetAssetPath(x) == "Library/unity editor resources")
-                .FirstOrDefault(x => x.name == name);
+            InfoIcon  = Util.LoadBuiltInIcon("console.infoicon");
+            WarnIcon  = Util.LoadBuiltInIcon("console.warnicon");
+            ErrorIcon = Util.LoadBuiltInIcon("console.erroricon");
         }
 
         [MenuItem("Tools/Overwirte AnimatorController...")]
         public static void ShowWindow()
         {
-            EditorWindow.GetWindow<UI>().Show();
+            EditorWindow.GetWindow<AnimatorControllerOverwriterUI>().Show();
         }
 
         private void OnGUI()
@@ -113,8 +111,10 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
             MergeSameParameters = GUILayout.Toggle(MergeSameParameters, "Merge same parameters");
 
             EditorGUILayout.Space();
-
-            //AnimationClip
+            
+            EditorGUI.indentLevel++;
+            AnimationClipMoverGUI();
+            EditorGUI.indentLevel--;
 
             EditorGUILayout.Space();
 
@@ -134,21 +134,23 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
 
             if (GUILayout.Button("Generate AnimatorController"))
             {
-                var path = EditorUtility.SaveFilePanelInProject
+                var folderPath = EditorUtility.OpenFolderPanel
                 (
-                    "Save AnimatorController",
-                    $"{OriginalAnimatorController.name}_overwritten.controller",
-                    "controller",
-                    "Enter a name of new AnimatorController."
+                    "Select AnimatorController Save Folder",
+                    "Assets",
+                    ""
                 );
 
-                try
+                if (!string.IsNullOrEmpty(folderPath))
                 {
-                    Generate(path);
-                }
-                catch (Exception ex)
-                {
-                    Error = ex;
+                    try
+                    {
+                        Generate(Util.ToRelativePath(folderPath));
+                    }
+                    catch (Exception ex)
+                    {
+                        Error = ex;
+                    }
                 }
             }
 
@@ -194,6 +196,30 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
                     new GUIStyle(EditorStyles.helpBox)
                 );
             }
+            else if (Error is PathIsNotDataPathException pathex)
+            {
+                GUILayout.Box
+                (
+                    new GUIContent
+                    (
+                        $"'{pathex.Path}' is not asset data path.",
+                        ErrorIcon
+                    ),
+                    new GUIStyle(EditorStyles.helpBox)
+                );
+            }
+            else if (Error is AssetCopyFailureException copyex)
+            {
+                GUILayout.Box
+                (
+                    new GUIContent
+                    (
+                        $"Fail to copy AnimatorController.",
+                        ErrorIcon
+                    ),
+                    new GUIStyle(EditorStyles.helpBox)
+                );
+            }
             else if (Error != null)
             {
                 GUILayout.Box
@@ -222,6 +248,59 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
             EditorGUILayout.EndScrollView();
         }
 
+        private void AnimationClipMoverGUI()
+        {
+            EditorGUILayout.LabelField("Move AnimationClips' hierarchy", new GUIStyle(EditorStyles.largeLabel));
+
+            AnimationClipMoveMode = (AnimationClipMoveMode)EditorGUILayout.EnumPopup("AnimationClip Move Mode", AnimationClipMoveMode);
+
+            GUILayout.Box
+            (
+                new GUIContent
+                (
+                    "This selection is the movement behaviour mode of AnimationClips' hierarchy.\n" +
+                    "Disable : Do not move AnimationClips' hierarchy.\n" +
+                    "Child To Parent : Child overwriting AnimationClips will be copied to parent base GameObject hierarchy.\n" +
+                    "Parent To Child : Parent overwriting AnimationClips will be copied to child base GameObject hierarchy.",
+                    InfoIcon
+                ),
+                new GUIStyle(EditorStyles.helpBox)
+            );
+
+            switch (AnimationClipMoveMode)
+            {
+                case AnimationClipMoveMode.Disable:
+                    AnimationClipMoverDisableGUI();
+                    break;
+                case AnimationClipMoveMode.ChildToParent:
+                    AnimationClipMoverChildToParentGUI();
+                    break;
+                case AnimationClipMoveMode.ParentToChild:
+                    AnimationClipMoverParentToChildGUI();
+                    break;
+            }
+        }
+
+        private void AnimationClipMoverDisableGUI()
+        {
+            EditorGUI.BeginDisabledGroup(true);
+            EditorGUILayout.ObjectField("GameObject (from)", OverwriteObject, typeof(GameObject), true);
+            EditorGUILayout.ObjectField("GameObject (to)"  , OriginalObject , typeof(GameObject), true);
+            EditorGUI.EndDisabledGroup();
+        }
+
+        private void AnimationClipMoverChildToParentGUI()
+        {
+            OverwriteObject = (GameObject)EditorGUILayout.ObjectField("Child GameObject (from)", OverwriteObject, typeof(GameObject), true);
+            OriginalObject  = (GameObject)EditorGUILayout.ObjectField("Parent GameObject (to)" , OriginalObject , typeof(GameObject), true);
+        }
+
+        private void AnimationClipMoverParentToChildGUI()
+        {
+            OverwriteObject = (GameObject)EditorGUILayout.ObjectField("Parent GameObject (from)", OverwriteObject, typeof(GameObject), true);
+            OriginalObject  = (GameObject)EditorGUILayout.ObjectField("Child GameObject (to)"   , OriginalObject , typeof(GameObject), true);
+        }
+
         public void Validate()
         {
             Error = null;
@@ -234,26 +313,32 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
                 SameNameLayerMode,
                 PrefixOfOriginalLayer,
                 PrefixOfOverwriteLayer,
-                MergeSameParameters
+                MergeSameParameters,
+                OverwriteObject,
+                OriginalObject,
+                AnimationClipMoveMode
             );
         }
 
-        public void Generate(string path)
+        public void Generate(string folderPath)
         {
-            if (string.IsNullOrWhiteSpace(path)) return;
+            if (string.IsNullOrWhiteSpace(folderPath)) return;
             
             Error = null;
             LastRunningProcess = "Generation";
 
             Overwriter.Generate
             (
-                path,
+                folderPath,
                 OriginalAnimatorController,
                 OverwriteAnimatorController,
                 SameNameLayerMode,
                 PrefixOfOriginalLayer,
                 PrefixOfOverwriteLayer,
-                MergeSameParameters
+                MergeSameParameters,
+                OverwriteObject,
+                OriginalObject,
+                AnimationClipMoveMode
             );
         }
     }
