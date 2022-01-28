@@ -2,9 +2,10 @@
 
 ## 2.0.0
 
-New feature
+New feature and bug fix
 
 - Move AnimationClips' hierarchy
+- Fix bug about file broken
 
 ## 1.1.2
 

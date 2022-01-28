@@ -99,7 +99,6 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
                     original,
                     mode
                 );
-                AssetDatabase.Refresh();
                 return result;
             }
             catch
@@ -171,6 +170,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
                 }
             }
 
+            EditorUtility.SetDirty(newClip);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 

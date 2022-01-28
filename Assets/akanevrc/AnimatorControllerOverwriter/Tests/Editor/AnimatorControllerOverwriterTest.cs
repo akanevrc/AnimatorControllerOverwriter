@@ -937,7 +937,10 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor.Tests
 
                 Type type = result.GetType();
 
-                if (typeof(AnimatorControllerLayer).IsAssignableFrom(parentType) && propertyName == "name")
+                if (propertyName == "hideFlags")
+                {
+                }
+                else if (typeof(AnimatorControllerLayer).IsAssignableFrom(parentType) && propertyName == "name")
                 {
                     if (IsOriginalLayerIndices == null || IsOriginalLayerIndices[parentIndex])
                     {

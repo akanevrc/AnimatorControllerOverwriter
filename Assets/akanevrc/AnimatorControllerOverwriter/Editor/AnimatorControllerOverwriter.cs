@@ -148,9 +148,9 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
         )
         {
             var name =
-                original  != null ? $"{original.name }_overwritten.controller" :
+                original  != null ? $"{original .name}_overwritten.controller" :
                 overwrite != null ? $"{overwrite.name}_overwritten.controller" : "new.controller";
-            var path = Path.Combine(folderPath, $"{name}_overwritten.controller");
+            var path = Path.Combine(folderPath, name);
             path     = AssetDatabase.GenerateUniqueAssetPath(path);
 
             var result = (AnimatorController)null;
@@ -171,7 +171,6 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
                     originalObject,
                     animationClipMoveMode
                 );
-                AssetDatabase.Refresh();
                 return result;
             }
             catch
@@ -200,9 +199,9 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
             var result = AnimatorController.CreateAnimatorControllerAtPath(path);
 
             var name =
-                original  != null ? $"{original.name }_overwritten" :
+                original  != null ? $"{original .name}_overwritten" :
                 overwrite != null ? $"{overwrite.name}_overwritten" : "new";
-            result.name   = name;
+            result.name = name;
             result.parameters = OverwriteParameters
                 (
                     original  == null ? new AnimatorControllerParameter[0] : original .parameters,
@@ -211,15 +210,24 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
                 );
             result.layers = OverwriteLayers
                 (
+                    isGenerating,
+                    folderPath,
                     original  == null ? new AnimatorControllerLayer[0] : original .layers,
                     overwrite == null ? new AnimatorControllerLayer[0] : overwrite.layers,
                     sameNameLayerMode,
                     prefixOfOriginalLayer,
-                    prefixOfOverwriteLayer
+                    prefixOfOverwriteLayer,
+                    overwriteObject,
+                    originalObject,
+                    animationClipMoveMode
                 );
 
-            var visitor   = new Visitor(isGenerating, AnimationClipMover, folderPath, overwriteObject, originalObject, animationClipMoveMode);
-            result.layers = result.layers.Select(visitor.VisitLayer).ToArray();
+            var visitor = new AssetVisitor(result);
+            visitor.Visit();
+
+            EditorUtility.SetDirty(result);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
 
             return result;
         }
@@ -248,19 +256,24 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
 
         private AnimatorControllerLayer[] OverwriteLayers
         (
+            bool isGenerating,
+            string folderPath,
             AnimatorControllerLayer[] originals,
             AnimatorControllerLayer[] overwrites,
             SameNameLayerMode sameNameLayerMode,
             string prefixOfOriginalLayer,
-            string prefixOfOverwriteLayer
+            string prefixOfOverwriteLayer,
+            GameObject overwriteObject,
+            GameObject originalObject,
+            AnimationClipMoveMode animationClipMoveMode
         )
         {
             switch (sameNameLayerMode)
             {
                 case SameNameLayerMode.RaiseError:
                 {
-                    var newOriginals  = originals .Select(DuplicateLayer(prefixOfOriginalLayer , 0                  )).ToArray();
-                    var newOverwrites = overwrites.Select(DuplicateLayer(prefixOfOverwriteLayer, newOriginals.Length)).ToArray();
+                    var newOriginals  = originals .Select(DuplicateLayer(prefixOfOriginalLayer , 0                  , isGenerating, false, folderPath, overwriteObject, originalObject, animationClipMoveMode)).ToArray();
+                    var newOverwrites = overwrites.Select(DuplicateLayer(prefixOfOverwriteLayer, newOriginals.Length, isGenerating, true , folderPath, overwriteObject, originalObject, animationClipMoveMode)).ToArray();
                     foreach (var orig in newOriginals)
                     {
                         foreach (var over in newOverwrites)
@@ -272,8 +285,8 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
                 }
                 case SameNameLayerMode.DoNotCopy:
                 {
-                    var newOriginals  = originals .Select(DuplicateLayer(prefixOfOriginalLayer , 0)).ToArray();
-                    var newOverwrites = overwrites.Select(DuplicateLayer(prefixOfOverwriteLayer, 0)).ToArray();
+                    var newOriginals  = originals .Select(DuplicateLayer(prefixOfOriginalLayer , 0, isGenerating, false, folderPath, overwriteObject, originalObject, animationClipMoveMode)).ToArray();
+                    var newOverwrites = overwrites.Select(DuplicateLayer(prefixOfOverwriteLayer, 0, isGenerating, true , folderPath, overwriteObject, originalObject, animationClipMoveMode)).ToArray();
                     var nameToOrig    = newOriginals.ToDictionary(elem => elem.name, elem => elem);
                     var isDeleteds    = newOverwrites.Select(elem => nameToOrig.ContainsKey(elem.name)).ToArray();
                     for (var i = 0; i < newOverwrites.Length; i++)
@@ -296,8 +309,8 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
                 }
                 case SameNameLayerMode.Replace:
                 {
-                    var newOriginals  = originals .Select(DuplicateLayer(prefixOfOriginalLayer , 0)).ToArray();
-                    var newOverwrites = overwrites.Select(DuplicateLayer(prefixOfOverwriteLayer, 0)).ToArray();
+                    var newOriginals  = originals .Select(DuplicateLayer(prefixOfOriginalLayer , 0, isGenerating, false, folderPath, overwriteObject, originalObject, animationClipMoveMode)).ToArray();
+                    var newOverwrites = overwrites.Select(DuplicateLayer(prefixOfOverwriteLayer, 0, isGenerating, true , folderPath, overwriteObject, originalObject, animationClipMoveMode)).ToArray();
                     var nameToOrig    = newOriginals .Select((elem, i) => (elem, i)).ToDictionary(ei => ei.elem.name, ei => ei);
                     var nameToOver    = newOverwrites.Select((elem, i) => (elem, i)).ToDictionary(ei => ei.elem.name, ei => ei);
                     var isDeleteds    = newOriginals .Select(elem => nameToOver.ContainsKey(elem.name)).ToArray();
@@ -343,7 +356,19 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
             return result;
         }
 
-        private Func<AnimatorControllerLayer, AnimatorControllerLayer> DuplicateLayer(string prefix, int baseIndex) => (AnimatorControllerLayer src) =>
+        private Func<AnimatorControllerLayer, AnimatorControllerLayer> DuplicateLayer
+        (
+            string prefix,
+            int baseIndex,
+            bool isGenerating,
+            bool isOverwrite,
+            string folderPath,
+            GameObject overwriteObject,
+            GameObject originalObject,
+            AnimationClipMoveMode animationClipMoveMode
+
+        ) =>
+        (AnimatorControllerLayer src) =>
         {
             if (src == null) return null;
 
@@ -357,7 +382,16 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
             result.syncedLayerAffectsTiming = src.syncedLayerAffectsTiming;
             result.syncedLayerIndex         = src.syncedLayerIndex == -1 ? -1 : src.syncedLayerIndex + baseIndex;
 
-            var func = new DuplicateStateMachineFunc(this);
+            var func = new DuplicateStateMachineFunc
+            (
+                this,
+                isGenerating,
+                isOverwrite,
+                folderPath,
+                overwriteObject,
+                originalObject,
+                animationClipMoveMode
+            );
 
             result.stateMachine = src.stateMachine == null ? null : func.Invoke(src.stateMachine);
 
@@ -367,16 +401,38 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
         private class DuplicateStateMachineFunc
         {
             private readonly AnimatorControllerOverwriter Parent;
+            private readonly bool IsGenerating;
+            private readonly bool IsOverwrite;
+            private readonly IAnimationClipMover Mover;
+            private readonly string FolderPath;
+            private readonly GameObject OverwriteObject;
+            private readonly GameObject OriginalObject;
+            private readonly AnimationClipMoveMode AnimationClipMoveMode;
             private readonly HashSet<AnimatorStateMachine> Exists;
             private readonly Dictionary<AnimatorState, AnimatorState> OldToNewState;
             private readonly Dictionary<AnimatorStateMachine, AnimatorStateMachine> OldToNewStateMachine;
 
-            public DuplicateStateMachineFunc(AnimatorControllerOverwriter parent)
+            public DuplicateStateMachineFunc
+            (
+                AnimatorControllerOverwriter parent,
+                bool isGenerating,
+                bool isOverwrite,
+                string folderPath,
+                GameObject overwriteObject,
+                GameObject originalObject,
+                AnimationClipMoveMode animationClipMoveMode
+            )
             {
-                Parent               = parent;
-                Exists               = new HashSet   <AnimatorStateMachine                      >(new UnityEqualityComparer<AnimatorStateMachine>());
-                OldToNewState        = new Dictionary<AnimatorState       , AnimatorState       >(new UnityEqualityComparer<AnimatorState>());
-                OldToNewStateMachine = new Dictionary<AnimatorStateMachine, AnimatorStateMachine>(new UnityEqualityComparer<AnimatorStateMachine>());
+                Parent                = parent;
+                IsGenerating          = isGenerating;
+                IsOverwrite           = isOverwrite;
+                FolderPath            = folderPath;
+                OverwriteObject       = overwriteObject;
+                OriginalObject        = originalObject;
+                AnimationClipMoveMode = animationClipMoveMode;
+                Exists                = new HashSet   <AnimatorStateMachine                      >(new UnityEqualityComparer<AnimatorStateMachine>());
+                OldToNewState         = new Dictionary<AnimatorState       , AnimatorState       >(new UnityEqualityComparer<AnimatorState>());
+                OldToNewStateMachine  = new Dictionary<AnimatorStateMachine, AnimatorStateMachine>(new UnityEqualityComparer<AnimatorStateMachine>());
             }
 
             public AnimatorStateMachine Invoke(AnimatorStateMachine src)
@@ -396,7 +452,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
                 if (Exists.Contains(src)) throw new ArgumentException("AnimatorStateMachine is structured recursively.", nameof(src));
                 Exists.Add(src);
 
-                var result = ObjectFactory.CreateInstance<AnimatorStateMachine>();
+                var result = new AnimatorStateMachine();
 
                 OldToNewStateMachine.Add(src, result);
 
@@ -442,7 +498,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
             {
                 if (src == null) return null;
 
-                var result = ObjectFactory.CreateInstance<AnimatorState>();
+                var result = new AnimatorState();
 
                 OldToNewState.Add(src, result);
 
@@ -466,7 +522,16 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
 
                 result.transitions = new AnimatorStateTransition[0];
 
-                result.motion = new DuplicateMotionFunc(Parent).Invoke(src.motion);
+                result.motion = new DuplicateMotionFunc
+                (
+                    Parent,
+                    IsGenerating,
+                    IsOverwrite,
+                    FolderPath,
+                    OverwriteObject,
+                    OriginalObject,
+                    AnimationClipMoveMode
+                ).Invoke(src.motion);
 
                 return result;
             }
@@ -475,7 +540,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
             {
                 if (src == null) return null;
 
-                var result = ObjectFactory.CreateInstance<AnimatorStateTransition>();
+                var result = new AnimatorStateTransition();
 
                 result.canTransitionToSelf = src.canTransitionToSelf;
                 result.duration            = src.duration;
@@ -494,7 +559,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
                 result.conditions              = src.conditions.Select(Parent.DuplicateCondition).ToArray();
                 result.destinationState        = src.destinationState        == null ? null : OldToNewState       [src.destinationState];
                 result.destinationStateMachine = src.destinationStateMachine == null ? null : OldToNewStateMachine[src.destinationStateMachine];
-                
+
                 return result;
             }
 
@@ -502,7 +567,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
             {
                 if (src == null) return null;
 
-                var result = ObjectFactory.CreateInstance<AnimatorTransition>();
+                var result = new AnimatorTransition();
 
                 result.conditions = src.conditions.Select(Parent.DuplicateCondition).ToArray();
                 result.hideFlags  = src.hideFlags;
@@ -541,18 +606,39 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
         private class DuplicateMotionFunc
         {
             private readonly AnimatorControllerOverwriter Parent;
+            private readonly bool IsGenerating;
+            private readonly bool IsOverwrite;
+            private readonly string FolderPath;
+            private readonly GameObject OverwriteObject;
+            private readonly GameObject OriginalObject;
+            private readonly AnimationClipMoveMode AnimationClipMoveMode;
             private readonly HashSet<Motion> Exists;
 
-            public DuplicateMotionFunc(AnimatorControllerOverwriter parent)
+            public DuplicateMotionFunc
+            (
+                AnimatorControllerOverwriter parent,
+                bool isGenerating,
+                bool isOverwrite,
+                string folderPath,
+                GameObject overwriteObject,
+                GameObject originalObject,
+                AnimationClipMoveMode animationClipMoveMode
+            )
             {
-                Parent = parent;
-                Exists = new HashSet<Motion>(new UnityEqualityComparer<Motion>());
+                Parent                = parent;
+                IsGenerating          = isGenerating;
+                IsOverwrite           = isOverwrite;
+                FolderPath            = folderPath;
+                OverwriteObject       = overwriteObject;
+                OriginalObject        = originalObject;
+                AnimationClipMoveMode = animationClipMoveMode;
+                Exists                = new HashSet<Motion>(new UnityEqualityComparer<Motion>());
             }
 
             public Motion Invoke(Motion src)
             {
                 if (src == null) return null;
-                if (src is AnimationClip) return src;
+                if (src is AnimationClip clip) return DuplicateAnimationClip(clip);
 
                 if (Exists.Contains(src)) throw new ArgumentException("Motion is structured recursively.", nameof(src));
                 Exists.Add(src);
@@ -566,11 +652,31 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
                 return result;
             }
 
+            private AnimationClip DuplicateAnimationClip(AnimationClip src)
+            {
+                if (src == null) return null;
+
+                if (!IsOverwrite) return src;
+
+                var result = (AnimationClip)null;
+                if (IsGenerating)
+                {
+                    result = Parent.AnimationClipMover.Generate(FolderPath, src, OverwriteObject, OriginalObject, AnimationClipMoveMode);
+                }
+                else
+                {
+                    Parent.AnimationClipMover.Validate(src, OverwriteObject, OriginalObject, AnimationClipMoveMode);
+                    result = src;
+                }
+
+                return result;
+            }
+
             private BlendTree DuplicateBlendTree(BlendTree src)
             {
                 if (src == null) return null;
 
-                var result = ObjectFactory.CreateInstance<BlendTree>();
+                var result = new BlendTree();
 
                 result.blendParameter         = src.blendParameter;
                 result.blendParameterY        = src.blendParameterY;
@@ -614,98 +720,71 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
             return result;
         }
 
-        private class Visitor
+        private class AssetVisitor
         {
-            private readonly bool IsGenerating;
-            private readonly IAnimationClipMover Mover;
-            private readonly string FolderPath;
-            private readonly GameObject OverwriteObject;
-            private readonly GameObject OriginalObject;
-            private readonly AnimationClipMoveMode AnimationClipMoveMode;
+            private readonly AnimatorController Controller;
+            private readonly string Path;
 
-            public Visitor
-            (
-                bool isGenerating,
-                IAnimationClipMover mover,
-                string folderPath,
-                GameObject overwriteObject,
-                GameObject originalObject,
-                AnimationClipMoveMode animationClipMoveMode
-            )
+            public AssetVisitor(AnimatorController controller)
             {
-                IsGenerating          = isGenerating;
-                Mover                 = mover;
-                FolderPath            = folderPath;
-                OverwriteObject       = overwriteObject;
-                OriginalObject        = originalObject;
-                AnimationClipMoveMode = animationClipMoveMode;
+                Controller = controller;
+                Path       = AssetDatabase.GetAssetPath(Controller);
             }
 
-            public AnimatorControllerLayer VisitLayer(AnimatorControllerLayer src)
+            public void Visit()
             {
-                if (src == null) return null;
-                src.stateMachine = VisitStateMachine(src.stateMachine);
-                return src;
+                foreach (var x in Controller.layers) VisitStateMachine(x.stateMachine);
             }
 
-            private AnimatorStateMachine VisitStateMachine(AnimatorStateMachine src)
+            private void VisitStateMachine(AnimatorStateMachine src)
             {
-                if (src == null) return null;
-                src.stateMachines = src.stateMachines.Select(VisitChildStateMachine).ToArray();
-                src.states        = src.states       .Select(VisitChildState       ).ToArray();
-                return src;
+                if (src == null) return;
+                AddSubAsset(src);
+                foreach (var x in src.stateMachines      ) VisitStateMachine   (x.stateMachine);
+                foreach (var x in src.states             ) VisitState          (x.state);
+                foreach (var x in src.anyStateTransitions) VisitStateTransition(x);
+                foreach (var x in src.entryTransitions   ) VisitTransition     (x);
             }
 
-            private ChildAnimatorStateMachine VisitChildStateMachine(ChildAnimatorStateMachine src)
+            private void VisitState(AnimatorState src)
             {
-                src.stateMachine = VisitStateMachine(src.stateMachine);
-                return src;
+                if (src == null) return;
+                AddSubAsset(src);
+                foreach (var x in src.transitions) VisitStateTransition(x);
+                VisitMotion(src.motion);
             }
 
-            private ChildAnimatorState VisitChildState(ChildAnimatorState src)
+            private void VisitStateTransition(AnimatorStateTransition src)
             {
-                src.state = VisitState(src.state);
-                return src;
+                if (src == null) return;
+                AddSubAsset(src);
             }
 
-            private AnimatorState VisitState(AnimatorState src)
+            private void VisitTransition(AnimatorTransition src)
             {
-                if (src == null) return null;
-                src.motion = VisitMotion(src.motion);
-                return src;
-            }
-            
-            private Motion VisitMotion(Motion src)
-            {
-                if (src == null) return null;
-                if (src is BlendTree     tree) return VisitBlendTree    (tree);
-                if (src is AnimationClip clip) return VisitAnimationClip(clip);
-                return src;
+                if (src == null) return;
+                AddSubAsset(src);
             }
 
-            private BlendTree VisitBlendTree(BlendTree src)
+            private void VisitMotion(Motion src)
             {
-                if (src == null) return null;
-                src.children = src.children.Select(VisitChildMotion).ToArray();
-                return src;
+                if (src == null) return;
+                AddSubAsset(src);
+                if (src is BlendTree tree) VisitBlendTree(tree);
             }
 
-            private ChildMotion VisitChildMotion(ChildMotion src)
+            private void VisitBlendTree(BlendTree src)
             {
-                src.motion = VisitMotion(src.motion);
-                return src;
+                foreach (var x in src.children) VisitMotion(x.motion);
             }
 
-            private AnimationClip VisitAnimationClip(AnimationClip src)
+            private void AddSubAsset(UnityEngine.Object obj)
             {
-                if (IsGenerating)
+                EditorUtility.SetDirty(obj);
+                if (AssetDatabase.GetAssetPath(obj).Length == 0)
                 {
-                    return Mover.Generate(FolderPath, src, OverwriteObject, OriginalObject, AnimationClipMoveMode);
-                }
-                else
-                {
-                    Mover.Validate(src, OverwriteObject, OriginalObject, AnimationClipMoveMode);
-                    return src;
+                    obj.hideFlags = HideFlags.HideInHierarchy;
+                    AssetDatabase.AddObjectToAsset(obj, Path);
                 }
             }
         }
