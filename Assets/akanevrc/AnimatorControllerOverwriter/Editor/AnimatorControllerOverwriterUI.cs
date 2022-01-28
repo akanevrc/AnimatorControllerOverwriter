@@ -48,25 +48,25 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
         {
             ScrollPosition = EditorGUILayout.BeginScrollView(ScrollPosition);
 
-            EditorGUIUtility.labelWidth = 200.0F;
+            EditorGUIUtility.labelWidth = 240.0F;
 
             GUILayout.Label("Overwrite AnimatorControllers", new GUIStyle(EditorStyles.largeLabel));
 
             EditorGUILayout.Space();
 
-            OriginalAnimatorController =
-                (AnimatorController)EditorGUILayout.ObjectField
-                (
-                    "Base AnimatorController",
-                    OriginalAnimatorController,
-                    typeof(AnimatorController),
-                    true
-                );
             OverwriteAnimatorController =
                 (AnimatorController)EditorGUILayout.ObjectField
                 (
-                    "Overwriting AnimatorController",
+                    "Overwriting AnimatorController (from)",
                     OverwriteAnimatorController,
+                    typeof(AnimatorController),
+                    true
+                );
+            OriginalAnimatorController =
+                (AnimatorController)EditorGUILayout.ObjectField
+                (
+                    "Base AnimatorController (to)",
+                    OriginalAnimatorController,
                     typeof(AnimatorController),
                     true
                 );
@@ -79,7 +79,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
             (
                 new GUIContent
                 (
-                    "This selection will be applied if same name layers exist between base and overwriting.\n" +
+                    "This selection will be applied if same name layers exist between overwriting and base.\n" +
                     "Raise Error : Error will occur when layer names conflict.\n" +
                     "Do Not Copy : Overwriting layer will not be copied into generated assets.\n" +
                     "Replace : Overwriting layer will be copied into generated assets, and conflicted base layer will not be copied.",
@@ -91,8 +91,8 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
             EditorGUILayout.Space();
 
             GUILayout.Label("Name prefixes");
-            PrefixOfOriginalLayer  = EditorGUILayout.TextField("Base layer"       , PrefixOfOriginalLayer);
             PrefixOfOverwriteLayer = EditorGUILayout.TextField("Overwriting layer", PrefixOfOverwriteLayer);
+            PrefixOfOriginalLayer  = EditorGUILayout.TextField("Base layer"       , PrefixOfOriginalLayer);
 
             GUILayout.Box
             (
@@ -250,7 +250,7 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
 
         private void AnimationClipMoverGUI()
         {
-            EditorGUILayout.LabelField("Move AnimationClips' hierarchy", new GUIStyle(EditorStyles.largeLabel));
+            EditorGUILayout.LabelField("Move AnimationClips' hierarchy");
 
             AnimationClipMoveMode = (AnimationClipMoveMode)EditorGUILayout.EnumPopup("AnimationClip Move Mode", AnimationClipMoveMode);
 

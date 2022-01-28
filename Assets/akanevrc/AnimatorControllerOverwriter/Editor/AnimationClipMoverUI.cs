@@ -47,9 +47,9 @@ namespace akanevrc.AnimatorControllerOverwriter.Editor
         {
             ScrollPosition = EditorGUILayout.BeginScrollView(ScrollPosition);
 
-            EditorGUIUtility.labelWidth = 200.0F;
+            EditorGUIUtility.labelWidth = 240.0F;
 
-            GUILayout.Label("Move AnimationClip", new GUIStyle(EditorStyles.largeLabel));
+            GUILayout.Label("Move AnimationClips' hierarchy", new GUIStyle(EditorStyles.largeLabel));
 
             EditorGUILayout.Space();
 
